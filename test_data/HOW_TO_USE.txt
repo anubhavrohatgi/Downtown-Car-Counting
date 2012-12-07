@@ -1,0 +1,10 @@
+This 60 second h264-encoded file (king_st.avi) must be re-encoded to RAW format for OpenCV 
+to process.
+
+This creates a very large file, so it has not been uploaded here.
+
+- Download ffmpeg (http://ffmpeg.org/)
+- CMD: $ ffmpeg -i king_st.avi -vcodec rawvideo king_st_raw.avi
+
+The paths to the raw video file and jpg mask are command-line parameters for the car
+counting software.

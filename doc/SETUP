@@ -1,0 +1,50 @@
+== Required ==
+
+OpenCV (I used 2.4.2)
+http://opencv.willowgarage.com/wiki/InstallGuide
+
+cvBlob lib:
+http://code.google.com/p/cvblob/
+  
+  
+== Dev Setup ==
+
+Eclipse Setup
+File >> New >> C++ Project
+  - Empty Project
+  - Finish
+Right-click on Project
+ >> New Folder >> Advanced >> Select "Link to alternate location"
+ - Browse to src folder from cloned git repo
+  
+To Setup OpenCV in Eclipse:
+http://www.jestinstoffel.com/?q=node/112
+
+Libraries (-l):
+opencv_calib3d
+opencv_contrib
+opencv_core
+opencv_features2d
+opencv_flann
+opencv_gpu
+opencv_highgui
+opencv_imgproc
+opencv_legacy
+opencv_ml
+opencv_nonfree
+opencv_objdetect
+opencv_photo
+opencv_stitching
+opencv_ts
+opencv_video
+opencv_videostab
+cvblob
+(from /usr/local/lib) # ls | grep opencv
+
+Library search path (-L)
+/usr/local/lib
+
+GCC C++ Includes
+/usr/local/include/opencv/
+/usr/local/include/opencv2/
+/opt/local/include/
