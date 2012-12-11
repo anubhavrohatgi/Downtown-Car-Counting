@@ -3,24 +3,25 @@
 // Forward declaration
 pair<double,double> leastSqrRegression(vector<CvBlob> &points, int numPointsToUse);
 
-RoadObject::RoadObject::RoadObject(int inID, CvBlob b) :
+RoadObject::RoadObject::RoadObject(int inID, CvBlob t) :
     lastSeen(0),
-    lastPoint(b),
+    lastPoint(t),
     id(inID),
-    minx(b.minx),
-    maxx(b.maxx),
-    miny(b.miny),
-    maxy(b.maxy),
+    minx(t.centroid.x),
+    maxx(t.centroid.x),
+    miny(t.centroid.y),
+    maxy(t.centroid.y),
     frameCount(0),
     lastBlobFrameNum(0)
 {
     //printf("Creating %d ... (%02f,%02f,%02f,%02f)\n", id, minx, maxx, miny, maxy);
-    points.push_back(b);
+    //printf("%d Setting A minxx %f\n", id, minx);
+    points.push_back(t);
 }
 
 RoadObject::~RoadObject()
 {
-    printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
+    //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
 }
 
 Rect RoadObject::getBounds()
@@ -43,7 +44,8 @@ double RoadObject::size()
 {
     double areaSum = 0;
     for (int i = 0; i < points.size(); i++) {
-        areaSum += points.at(i).area;
+        double area = (points.at(i).maxx - points.at(i).minx) * (points.at(i).maxy - points.at(i).miny);
+        areaSum += area;
     }
     return areaSum / points.size();
 }
@@ -59,64 +61,28 @@ int RoadObject::getLastSeenNFramesAgo()
     return lastSeen;
 }
 
-void RoadObject::addBlob(CvBlob b)
+void RoadObject::addTrack(CvBlob t)
 {
-    lastPoint = b;
-    points.push_back(b);
+    lastPoint = t;
+    points.push_back(t);
     lastSeen = 0;
     lastBlobFrameNum = frameCount;
 
-    minx = (b.minx < minx) ? b.minx : minx;
-    maxx = (b.maxx > maxx) ? b.maxx : maxx;
-    miny = (b.miny < miny) ? b.miny : miny;
-    maxy = (b.maxy > maxy) ? b.maxy : maxy;
+    minx = (t.centroid.x < minx) ? t.centroid.x : minx;
+    maxx = (t.centroid.x > maxx) ? t.centroid.x : maxx;
+    miny = (t.centroid.y < miny) ? t.centroid.y : miny;
+    maxy = (t.centroid.y > maxy) ? t.centroid.y : maxy;
+    //printf("%d ADDING %f,%f\n", id, t.centroid.x, t.centroid.y);
+    //printf("%d Setting B minxx %f\n", id, minx);
 }
 
 void RoadObject::printPoints()
 {
+    printf("%d: minx %f maxx %f\n", id, minx, maxx);
     for (int i = 0; i < points.size(); i++) {
-        printf("%d,%d\n", points.at(i).centroid.x, points.at(i).centroid.y);
+        double area = (points.at(i).maxx - points.at(i).minx) * (points.at(i).maxy - points.at(i).miny);
+        printf("%f,%f area %f\n", points.at(i).centroid.x, points.at(i).centroid.y, area);
     }
-}
-
-double RoadObject::pctRecentOverlap(int numPoints, CvBlob r2)
-{
-    int overlaps = 0;
-    int numPointToAvg = (points.size() < numPoints) ? points.size() : numPoints;
-
-    for (int i = 0; i < numPointToAvg; i++) {
-        CvBlob r1 = points.at(points.size() - 1 - i);
-
-        //printf("R1 %d %d %d %d\n", r1.minx, r1.maxx, r1.miny, r1.maxy);
-        //printf("R2 %d %d %d %d\n", r2.minx, r2.maxx, r2.miny, r2.maxy);
-
-        // http://www.leetcode.com/2011/05/determine-if-two-rectangles-overlap.html
-
-        bool noOverlap = ( r1.maxy < r2.miny || r1.miny > r2.maxy || r1.maxx < r2.minx || r1.minx > r2.maxx );
-
-                //( r1.maxx < r2.maxy || r1.maxy > r2.miny || r1.maxx < r2.minx || r1.minx > r2.maxx );
-
-        //printf("%d %d %d %d\n", r1.maxy < r2.miny, r1.miny > r2.maxy, r1.maxx < r2.minx, r1.minx > r2.maxx);
-
-#if 0
-        if (rect1.topLeft.x >= rect2.bottomRight.x
-            || rect1.bottomRight.x <= rect2.topLeft.x
-            || rect1.topLeft.y <= rect2.bottomRight.y
-            || rect1.bottomRight.y >= rect2.topLeft.y)
-          return false;
-
-        ALT
-        if (rect1.topLeft.x >= rect2.bottomRight.x
-        || rect1.bottomRight.x <= rect2.topLeft.x
-        || rect1.topLeft.y >= rect2.bottomRight.y
-        || rect1.bottomRight.y <= rect2.topLeft.y)
-#endif
-
-        if (!noOverlap) {
-            overlaps++;
-        }
-    }
-    return (numPointToAvg > 0) ? (overlaps / numPointToAvg) : 0;
 }
 
 double RoadObject::slopeOfPath()
@@ -146,7 +112,7 @@ double RoadObject::distanceTravelledLastNFrames(int numFrames)
 
 double RoadObject::distanceTravelled()
 {
-    return distance(minx, maxx, miny, maxy);
+    return abs(minx - maxx);
 }
 
 double RoadObject::errFromLine(int numPoints, CvBlob b)

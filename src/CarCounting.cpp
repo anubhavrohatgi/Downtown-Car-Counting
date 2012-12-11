@@ -1,3 +1,5 @@
+#if 0
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv/cv.h>
@@ -351,14 +353,14 @@ int main(int argc, char* argv[]) {
                 //imshow("mean background image", bgimg );
             }
 #endif
-
+#if 1
             key = cvWaitKey(1);
-             if (key == 'p' || newROs != 0) {
+             if (key == 'p') {
                  do {
                      key = cvWaitKey(1);
                  } while (key != 'p');
              }
-
+#endif
 
         } catch (cv::Exception& e) {
             printf("Caught Exception: %s\n", e.what());
@@ -396,3 +398,4 @@ int main(int argc, char* argv[]) {
     cvDestroyWindow("video");
 }
 
+#endif

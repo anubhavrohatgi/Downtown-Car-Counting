@@ -36,11 +36,11 @@ using namespace cvb;
 // TODO: args in order, m_ as well
 class CarCounter {
 public:
-    CarCounter(double distThresh, Rect* bounds, bool use_slope_prediction, double expPathSlope);
+    CarCounter(unsigned int xPos);
 
     ~CarCounter();
 
-    CvBlobs getBlobs();
+    //CvBlobs getBlobs();
 
 
     void setBoundaries(Rect &bounds);
@@ -59,6 +59,7 @@ private:
     int carCount;
     int bikeCount;
     int streetcarCount;
+    int xBoundary;
     bool useSlopeOfPathFilter;
 
     Rect * boundaries;
@@ -67,9 +68,9 @@ private:
 
     int rosCreated;
 
-    const static int MIN_NUM_POINTS = 20;
-    const static int MIN_FRAME_TIMEOUT = 15;
-    const static int MAX_FRAME_TIMEOUT = 30 * 60 * 2; // 2 minutes at 30 fps
+    const static int MIN_NUM_POINTS = 7;
+    const static int MIN_FRAME_TIMEOUT = 5 * 10; // 10 seconds at 5 fps
+    const static int MAX_FRAME_TIMEOUT = 5 * 60 * 2; // 2 minutes at 5 fps
 
     const static int NUM_POINTS_FOR_LINEAR_REGRESSION = 5;
     const static int NUM_POINTS_FOR_OVERLAP_CHECK = 2;

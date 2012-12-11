@@ -51,11 +51,10 @@ public:
 
     int getLastSeenNFramesAgo();
 
-    void addBlob(CvBlob b);
+    void addTrack(CvBlob b);
 
     void printPoints();
 
-    double pctRecentOverlap(int numPoints, CvBlob r2);
     double slopeOfPath();
 
     // NOTE: Not exactly accurate ... measures last blobs, regardless when exactly they were recorded.
