@@ -40,7 +40,7 @@ using namespace cvb;
 
 int readCsv();
 
-int main(int argc, char* argv[]) {
+int m33ain(int argc, char* argv[]) {
 
     if (argc < 2) {
         printf("Usage: %s PATH_TO_RAW_AVI_VIDEO_FILE [IMAGE_MASK_JPG_OR_OTHER_FORMAT]", argv[0]);
@@ -84,7 +84,7 @@ int readCsv()
 
     // print out what was read in
 
-    CarCounter counter(260);
+    CarCounter counter;
 
     printf("ARRAY SIZE: %d\n", array.size());
 

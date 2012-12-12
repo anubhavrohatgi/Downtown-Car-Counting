@@ -2,8 +2,7 @@
 
 #include <limit>
 
-CarCounter::CarCounter(unsigned int xPos) :
-    xBoundary(xPos),
+CarCounter::CarCounter() :
     carCount(0),
     bikeCount(0),
     streetcarCount(0),

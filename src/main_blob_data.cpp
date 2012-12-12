@@ -5,6 +5,7 @@
 #include "cvblob.h"
 #include "RoadObject.h"
 #include "CarCounter.h"
+#include "CarCountManager.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,8 +66,73 @@ int write_to_file(char const *fileName, char * line)
     return 0;
 }
 
-int mai33n(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
 
+    // Parse Cmd Line Args
+    char * csvData = NULL;
+    char * ipCamera = NULL;
+    char * videoFile = NULL;
+    char * imgMask = NULL;
+    char * csvLogFile = NULL;
+
+    int c;
+    int dataSources = 0;
+
+    while ((c = getopt (argc, argv, "d:i:v:m:f:l:h")) != -1) {
+        switch (c)
+        {
+            case 'd':
+                csvData = optarg;
+                dataSources++;
+                break;
+            case 'i':
+                ipCamera = optarg;
+                dataSources++;
+                break;
+            case 'v':
+                videoFile = optarg;
+                dataSources++;
+                break;
+            case 'm':
+                imgMask = optarg;
+                break;
+            case 'l':
+                csvLogFile = optarg;
+                break;
+            case 'h':
+                // TODO: print usage
+                return 1;
+            default:
+                abort();
+        }
+    }
+
+    if (dataSources > 1) {
+        printf("Error: Multiple Data Sources Selected\n");
+        return 1;
+    }
+
+    CarCountManager manager;
+
+    // Configure Manager
+    if (csvLogFile) {
+        manager.setCsvLogFile(csvLogFile);
+    }
+
+    if (imgMask) {
+        manager.setImgMask(imgMask);
+    }
+
+    // Process Data or Stream from Camera
+    if (csvData) {
+        manager.processCsvFile(csvData);
+    } else if (ipCamera) {
+        manager.processIpCamera(ipCamera);
+    } else if (videoFile) {
+        manager.processVideoFile(videoFile);
+    }
+
+#if 0
     if (argc < 2) {
         printf("Usage: %s PATH_TO_RAW_AVI_VIDEO_FILE [IMAGE_MASK_JPG_OR_OTHER_FORMAT]", argv[0]);
         return 0;
@@ -419,5 +485,6 @@ int mai33n(int argc, char* argv[]) {
     /* free memory */
     cvReleaseCapture(&capture);
     cvDestroyWindow("video");
+#endif
 }
 

@@ -36,9 +36,13 @@ using namespace cvb;
 // TODO: args in order, m_ as well
 class CarCounter {
 public:
-    CarCounter(unsigned int xPos);
+    CarCounter();
 
     ~CarCounter();
+
+    int getCarCount() {
+        return carCount;
+    }
 
     double getAvgSpeed(int numFrames);
 
