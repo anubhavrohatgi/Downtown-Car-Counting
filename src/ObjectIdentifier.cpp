@@ -1,14 +1,18 @@
 #include "ObjectIdentifier.h"
 
+#include <limits>
+
 // Forward declaration
 pair<double,double> leastSqrRegression(vector<CvBlob> &blobs, int numPointsToUse);
 
-ObjectIdentifier::ObjectIdentifier() :
+ObjectIdentifier::ObjectIdentifier(CvBlob b) :
     lastSeen(0),
     frameCount(0),
-    id(globalID++)
+    id(++globalID),
+    closestDistToOrigin(0),
+    furthestDistToOrigin(0)
 {
-
+    addBlob(b);
 }
 
 ObjectIdentifier::~ObjectIdentifier()
@@ -27,45 +31,72 @@ int ObjectIdentifier::getLastSeenNFramesAgo()
     return lastSeen;
 }
 
+int ObjectIdentifier::getNumBlobs()
+{
+    return blobs.size();
+}
+
+int ObjectIdentifier::getFirstFrame()
+{
+    return (blobs.at(0).label);
+}
+
+int ObjectIdentifier::lifetime()
+{
+    return (lastBlob.label - blobs.at(0).label);
+}
+
+double ObjectIdentifier::getSpeed()
+{
+    double speed = (lifetime() > 0 ? distanceTravelled() / lifetime() : 0);
+    return speed;
+}
+
 bool ObjectIdentifier::addBlob(CvBlob b)
 {
     lastBlob = b;
     blobs.push_back(b);
     lastSeen = 0;
     lastBlobFrameNum = frameCount;
+
+    // Keep track of closest and furthest blobs from origin
+    double distanceToOrigin = distance(b.centroid.x, b.centroid.y, 0, 0);
+
+    if (distanceToOrigin > furthestDistToOrigin) {
+        furthestBlob = b;
+        furthestDistToOrigin = distanceToOrigin;
+    }
+
+    if (distanceToOrigin < closestDistToOrigin) {
+        closestBlob = b;
+        closestDistToOrigin = distanceToOrigin;
+    }
 }
-#if 0
-bool ObjectIdentifier::addPoint(double x, double y)
-{
-    struct CvBlob * b = new struct CvBlob;
-    b->centroid.x = x;
-    b->centroid.y = y;
-    return addBlob(*b);
-}
-#endif
+
 void ObjectIdentifier::printPoints()
 {
     for (int i = 0; i < blobs.size(); i++) {
-        printf("%f,%f area %d\n", blobs.at(i).centroid.x, blobs.at(i).centroid.y, blobs.at(i).area);
+        unsigned int frameNum = blobs.at(i).label; // HACK, stored the frameNumber in the blob data
+        printf("%d,%f,%f,%d,%d\n", frameNum, blobs.at(i).centroid.x, blobs.at(i).centroid.y, blobs.at(i).area, id);
     }
 }
 
 double ObjectIdentifier::distanceTravelled()
 {
-    return 0; // TODO
+    return distanceBetweenBlobs(furthestBlob, closestBlob);
 }
 
-double ObjectIdentifier::errFromLine(int numblobs, CvBlob b)
+double ObjectIdentifier::errFromLine(CvBlob b)
 {
-    if (numblobs == 1 || blobs.size() == 1) {
-        return 999999; // MAX_INT
+    if (blobs.size()  < 2) {
+        return std::numeric_limits<int>::max(); // MAX_INT
     }
 
-    pair<double,double> line = leastSqrRegression(blobs, numblobs);
+    pair<double,double> line = leastSqrRegression(blobs, blobs.size());
     double slope = line.first;
     double y_int = line.second;
     double y_exp = slope * b.centroid.x + y_int;
-    return (abs(b.centroid.y - y_exp));
+    return distance(b.centroid.x, b.centroid.y, b.centroid.x, y_exp);
 }
 
 CvBlob ObjectIdentifier::getLastBlob()
@@ -78,6 +109,11 @@ int ObjectIdentifier::getId()
     return id;
 }
 
+double ObjectIdentifier::distanceBetweenBlobs(CvBlob b1, CvBlob b2)
+{
+    return distance(b1.centroid.x, b1.centroid.y, b2.centroid.x, b2.centroid.y);
+}
+
 #if 0
 vector<CvBlob> * ObjectIdentifier::getBlobs()
 {
@@ -85,19 +121,62 @@ vector<CvBlob> * ObjectIdentifier::getBlobs()
 }
 #endif
 
-double ObjectIdentifier::distance(double x1, double x2, double y1, double y2)
+// Distance between 2 points
+double ObjectIdentifier::distance(double x1, double y1, double x2, double y2)
 {
-    return sqrt(abs((x2 - x1) * (x2 - x1)) + abs((y2 - y1) * (y2 - y1)));
+    return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
 bool ObjectIdentifier::inRange(CvBlob b)
 {
-    return true; // TODO
+    // TODO: CONTS for these and override for EastboundObjectDetector
+    //printf("inRange BLOB %f, %f   LAST_BLOB %f,%f\n", b.centroid.x, b.centroid.y, lastBlob.centroid.x, lastBlob.centroid.y);
+    if (b.centroid.x <= lastBlob.centroid.x &&
+            (lastBlob.centroid.x - b.centroid.x < 25)) {
+        // New point is left of the last blob
+        return true;
+    } else if (lastBlob.centroid.x - b.centroid.x <= 75) {
+        // New point is right of the last blob
+        return true;
+    }
+    return false;
+}
+
+bool ObjectIdentifier::inStartingZone(CvBlob b)
+{
+    double x = b.centroid.x;
+    double y = b.centroid.y;
+    return (x > 275 && x < 350 && y > 300 && y < 375);
+}
+
+bool ObjectIdentifier::inEndZone()
+{
+    double x = furthestBlob.centroid.x;
+    double y = furthestBlob.centroid.y;
+    return (x > 500 && y > 360);
+}
+
+double ObjectIdentifier::expectedY(double x)
+{
+    // TODO: CONTST for these and override for EastboundObjectDetector
+    double slope = 0.185;
+    double y_int = 270;
+    double y_exp = slope * x + y_int;
+    return y_exp;
 }
 
 double ObjectIdentifier::distFromExpectedPath(CvBlob b)
 {
-    return 0; // TODO
+    // TODO: CONTST for these and override for EastboundObjectDetector
+    double slope = 0.185;
+    double y_int = 270;
+    double y_exp = slope * b.centroid.x + y_int; // TODO: Remove code duplication
+    return distance(b.centroid.x, b.centroid.y, b.centroid.x, y_exp);
+}
+
+double ObjectIdentifier::distanceFromLastBlob(CvBlob b)
+{
+    return distanceBetweenBlobs(lastBlob, b);
 }
 
 // HELPER FUNCTION

@@ -1,136 +1,154 @@
 #include "CarCounter.h"
 
+#include <limit>
+
 CarCounter::CarCounter(unsigned int xPos) :
     xBoundary(xPos),
     carCount(0),
     bikeCount(0),
     streetcarCount(0),
-    rosCreated(0)
+    rosCreated(0),
+    frameNumber(0)
 {
 
 }
 
 CarCounter::~CarCounter()
 {
-
+    printf("PRINTING ALL BLOBS ...\n");
+    for (int i = 0; i < allBlobs.size(); i++) {
+        unsigned int frameNum = allBlobs.at(i).label; // HACK, stored the frameNumber in the blob data
+        printf("%d,%f,%f,%d,%d\n", frameNum, allBlobs.at(i).centroid.x, allBlobs.at(i).centroid.y, allBlobs.at(i).area, (int)allBlobs.at(i).p1);
+    }
 }
 
-void CarCounter::setBoundaries(Rect &bounds) {
-    boundaries = &bounds;
-}
-
-int CarCounter::getMaxFrameTimeout() {
-    return MAX_FRAME_TIMEOUT;
-}
-
-double CarCounter::getAvgSpeed(int numFrames)
+int CarCounter::updateStats(CvBlobs& blobs)
 {
-    if (numFrames < 2) return 0;
-
-    double speedSum = 0;
-    for (list<RoadObject>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
-        RoadObject * ro = &*obj;
-        speedSum += ro->speedPixelsPerFrame(numFrames);
-    }
-    return (speedSum / numFrames);
+    updateStats(blobs, frameNumber++);
 }
 
-int CarCounter::updateStats(CvBlobs& tracks) {
+int CarCounter::updateStats(CvBlobs& blobs, int frameNum) {
+    frameNumber = frameNum;
     int newROs = 0;
-    CvBlobs::iterator it = tracks.begin();
+    int numBlobs = blobs.size();
+    int numObjs = objects.size();
 
-    // No objects created yet, but we have some blobs ... create first road object
-    if (objects.size() == 0 && tracks.size() != 0) {
-        //printf ("NO ROs: CREATE NEW RO\n");
-        // TODO: better memory mgmt - this is copied and deleted
+    // Classify the Blobs as Probable Road Objects
+    for (CvBlobs::iterator it = blobs.begin(); it != blobs.end(); ++it) {
 
-        // TODO: Remove code duplication
-        CvBlob * track = tracks.begin()->second;
+        CvBlob blob = *(it->second);
+        blob.label = frameNum; // Hack to store the frame number in the blob data
 
-        RoadObject obj(rosCreated++, *track);
-        objects.push_back(obj);
-        ++it;
-    }
+        ObjectIdentifier * closestFit = NULL;
 
-    for (; it != tracks.end(); ++it) {
+        double minDistanceFromPath = std::numeric_limits<double>::max();; //MAX_DOUBLE
+        double minDistanceLastBlob = std::numeric_limits<double>::max();; //MAX_DOUBLE
 
-        CvBlob track = *(it->second);
-#if 1
-        RoadObject * closestFit = NULL;
+        //printf("UpdateStats %d,%f,%f,%d\n", frameNum, blob.centroid.x, blob.centroid.y, blob.area);
 
-        double minDistance = 999999; //MAX_INT
+        for (list<ObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
 
-        for (list<RoadObject>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
+            // Identifier we're testing
+            ObjectIdentifier * oi = &*obj;
+            bool inRange;
+            double x = blob.centroid.x;
+            if (blob.label == 463) {
+                                printf("MMM\n");
+                                //inRange = oi->inRange(blob);
+                            }
 
-            // Road Object we're testing
-            RoadObject * ro = &*obj;
+            if (oi->inRange(blob)) {
+                double distanceFromExpectedPath = oi->distFromExpectedPath(blob); // TODO: use?
+                double distanceFromPathOfBlobs = oi->errFromLine(blob);
+                double distanceToLastBlob = oi->distanceFromLastBlob(blob);
 
-            // TODO: prefer to add it to a Road Object that has been active recently
+                bool inZone1 = ObjectIdentifier::inStartingZone(blob);
+                bool inZone2 = ObjectIdentifier::inStartingZone(oi->getLastBlob());
 
-            // Track RO that is the closest match
-            double distanceFromLastPt = ro->distanceFromLastPoint(1, track); // NUM_POINTS_TO_AVG
+                bool closeToExpectedPath = (distanceFromExpectedPath < 15);
+                bool closeToPlottedPath = (distanceFromPathOfBlobs < 20);
 
-            int trackArea = (track.maxx - track.minx) * (track.maxy - track.miny);
-
-            bool closeInSize = abs(ro->size() - trackArea) <= (0.50 * ro->size());
-
-            if (distanceFromLastPt < minDistance && closeInSize) {
-                // Only use this track if we the trend is moving westward
-                if (track.centroid.x < ro->getLastBlob().centroid.x) { // TODO: Make more general.
-                    minDistance = distanceFromLastPt;
-                    closestFit = ro;
+                bool isClosestToPathOfBlobs = (distanceFromPathOfBlobs < minDistanceFromPath);
+                if (isClosestToPathOfBlobs) {
+                    minDistanceFromPath = distanceFromPathOfBlobs;
                 }
+
+                bool isClosestToLastBlob = (distanceToLastBlob < minDistanceLastBlob);
+                if (isClosestToLastBlob) {
+                    minDistanceLastBlob = distanceToLastBlob;
+                }
+
+
+                if ((closeToExpectedPath || closeToPlottedPath) && isClosestToLastBlob) { // TODO: use CONSTS
+                    minDistanceFromPath = distanceFromPathOfBlobs;
+                    closestFit = oi;
+                } else if (distanceToLastBlob < 15) {
+                    // If blob we're looking at is in the starting zone and identifier we're comparing with is also in starting zone, relax
+                    // distanceFromExpectedPath criteria
+                    closestFit = oi;
+                }
+
             }
-
-            //printf("BLOB %d CHECK RO %d DIST %f MIN_DST %f OVERLAP_PCT %f\n", blob.label, ro->getId(), distanceFromLastPt, minDistance, overlap);
         }
 
-        // Look at metrics calculated and find the best RO to add the blob to, or create a new one
-        if (closestFit && minDistance < 20) { // distanceThreshold = 20 // TODO FIX
-            //printf("DISTANCE - ADD TO ID %d dist %f\n", closestFit->getId(), minDistance);
-            closestFit->addTrack(track);
-        } else {
-            // Create new road object
-            RoadObject obj(rosCreated++, track);
+        if (closestFit) {
+            // Add to existing Object Identifier
+            int id = closestFit->getId();
+            blob.p1 = id;
+            closestFit->addBlob(blob);
+            //printf("ADD TO OBJ\n");
+        } else if (ObjectIdentifier::inStartingZone(blob)) {
+            // No suitable identifier exists, this may be a new road object, create new identifier
+            ObjectIdentifier obj(blob);
+            int id = obj.getId();
+            blob.p1 = id;
             objects.push_back(obj);
+            //printf("NEW OBJ\n");
+        } else {
+            // Not sure what this is
+            blob.p1 = 0;
+            unidentifiedBlobs.push_back(blob);
+            //printf("UNIDENTIFIED BLOB\n");
         }
-#endif
+        allBlobs.push_back(blob);
     }
 
-    // Iterate through RoadObjects and see if we can classify (or discard) them
-    for (list<RoadObject>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
+    // Iterate through ObjectIdentifiers and see if we can classify (or discard) them
+    for (list<ObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
 
-        RoadObject * ro = &*obj;
-        ro->incrementFrameCount(); // Update 'age' counter
-        int lastSeen = ro->getLastSeenNFramesAgo();
+        ObjectIdentifier * oi = &*obj;
+        oi->incrementFrameCount(); // Update 'age' counter
 
-        double distanceTravelled = ro->distanceTravelled();
+        int lastSeen = oi->getLastSeenNFramesAgo();
+        double distanceTravelled = oi->distanceTravelled();
+        int numBlobs = oi->getNumBlobs();
 
-        // TODO: Could check how linear path has been as one indicator
-
-        if (ro->getNumPoints() >= MIN_NUM_POINTS && lastSeen > MIN_FRAME_TIMEOUT) {
-            // If last seen where we expect the car to exit, count it
-            int distanceToExit = abs(xBoundary - (int)ro->getLastBlob().minx);
-            if (distanceToExit < 5 && distanceTravelled > 50) {
-                printf("CAR: Short Timeout (To Exit: %d, Travelled: %f)\n", distanceToExit, distanceTravelled);
-                ro->printPoints();
-                carCount++;
+        if (lastSeen > 10 || (oi->lifetime() > 30 && oi->getSpeed() < 2)) { // TODO: Use CONSTS note: lifetime depends on FPS
+            if (numBlobs >= 8) {
+                if (oi->inEndZone()) {
+                    carCount++;
+                    obj = objects.erase(obj);
+                    newROs++;
+                    printf("END ZONE CAR: %d (%d - %d) speed %f\n", (int)distanceTravelled, oi->getFirstFrame(), oi->getLastBlob().label, oi->getSpeed());
+                    //oi->printPoints();
+                } else if (oi->distanceTravelled() > 150) { // TODO: use consts, note: normal distance is about ~300
+                    carCount++;
+                    obj = objects.erase(obj);
+                    newROs++;
+                    printf("DISTANCE CAR: %d (%d - %d) speed %f\n", (int)distanceTravelled, oi->getFirstFrame(), oi->getLastBlob().label, oi->getSpeed());
+                    //oi->printPoints();
+                } else {
+                    // Discard identifier
+                    printf("DISCARDED CAR numBlobs %d lastSeen %d dist %d speed %f\n", numBlobs, lastSeen, (int)distanceTravelled, oi->getSpeed());
+                    obj->printPoints();
+                    obj = objects.erase(obj);
+                }
+            } else {
+                // Discard identifier
+                printf("DISCARDED CAR numBlobs %d lastSeen %d dist %d speed %f\n", numBlobs, lastSeen, (int)distanceTravelled, oi->getSpeed());
+                obj->printPoints();
                 obj = objects.erase(obj);
-                newROs++;
-            } else if (lastSeen >= MAX_FRAME_TIMEOUT && distanceTravelled > 50) {
-                // Evidence of a car, but haven't seen it in a while.
-                // Count it as one
-                carCount++;
-                obj = objects.erase(obj);
-                newROs++;
-                printf("CAR: Long Timeout (%d)\n", distanceToExit);
             }
-
-        } else if (ro->getLastSeenNFramesAgo() >= MAX_FRAME_TIMEOUT) {
-            // TODO: check if we can call this a questionable car
-            obj = objects.erase(obj);
-            newROs++;
-            printf("NO CAR\n");
         }
     }
     return newROs;

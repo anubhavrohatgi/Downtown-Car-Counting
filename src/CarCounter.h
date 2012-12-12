@@ -6,7 +6,7 @@
 #include <opencv/cv.h>
 
 #include "cvblob.h"
-#include "RoadObject.h"
+#include "ObjectIdentifier.h"
 #include "CarCounter.h"
 
 #include <stdio.h>
@@ -40,17 +40,10 @@ public:
 
     ~CarCounter();
 
-    //CvBlobs getBlobs();
-
-
-    void setBoundaries(Rect &bounds);
-
-    int getMaxFrameTimeout();
-
     double getAvgSpeed(int numFrames);
 
     int updateStats(CvBlobs& blobs);
-
+    int updateStats(CvBlobs& blobs, int frameNum);
 
 
 private:
@@ -64,9 +57,14 @@ private:
 
     Rect * boundaries;
 
-    list<RoadObject> objects;
+    list<ObjectIdentifier> objects;
+    list<CvBlob> unidentifiedBlobs;
+
+    vector<CvBlob> allBlobs;
 
     int rosCreated;
+
+    int frameNumber;
 
     const static int MIN_NUM_POINTS = 7;
     const static int MIN_FRAME_TIMEOUT = 5 * 10; // 10 seconds at 5 fps

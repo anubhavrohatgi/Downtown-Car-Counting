@@ -36,7 +36,7 @@ static int globalID = 0;
 class ObjectIdentifier {
 
 public:
-    ObjectIdentifier();
+    ObjectIdentifier(CvBlob b);
 
     ~ObjectIdentifier();
 
@@ -50,24 +50,34 @@ public:
     void printPoints();
 
     double distanceTravelled();
+    double errFromLine(CvBlob b);
+    double distanceFromLastBlob(CvBlob b);
 
     CvBlob getLastBlob();
 
-    int getNumPoints();
+    int getNumBlobs();
 
     int getId();
 
+    int lifetime();
+
+    int getFirstFrame();
+
+    // Returned in pixels per frame
+    double getSpeed();
+
     virtual bool inRange(CvBlob b);
     virtual double distFromExpectedPath(CvBlob b);
-
+    static bool inStartingZone(CvBlob b);
+    bool inEndZone();
     vector<CvBlob> * getBlobs();
 
 private:
     int id;
 
-    double errFromLine(int numPoints, CvBlob b);
+    double distanceBetweenBlobs(CvBlob b1, CvBlob b2);
 
-    double distanceBetweenPoints(CvBlob b1, CvBlob b2);
+    double expectedY(double x);
 
     double distance(double x1, double x2, double y1, double y2);
 
@@ -77,6 +87,13 @@ private:
     int frameCount;
     int lastBlobFrameNum;
     CvBlob lastBlob;
+
+    CvBlob closestBlob;
+    double closestDistToOrigin;
+
+    CvBlob furthestBlob;
+    double furthestDistToOrigin;
+
     vector<CvBlob> blobs;
 };
 

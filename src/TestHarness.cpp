@@ -59,7 +59,9 @@ int readCsv()
 {
     using namespace std;
 
-    ifstream in("/Users/j3bennet/blobs319-east.csv");
+    //ifstream in("/Users/j3bennet/bah2.csv");
+    ifstream in("/Users/j3bennet/r430to525.csv");
+    //ifstream in("/Users/j3bennet/r859to1050.csv");
 
     string line, field;
 
@@ -90,28 +92,37 @@ int readCsv()
 
     int lastFrameNum = -1;
 
+    CvBlobs::iterator it;
+
     for (size_t i=0; i<array.size(); ++i)
     {
-        int frameNum;
         //printf("I SIZE %d\n", array[i].size());
         if (array[i].size() >= 4) {
             // Read Blob from file
-            struct CvBlob b;
-            frameNum = atoi(array[i][0].c_str());
-            b.centroid.x = atof(array[i][1].c_str());
-            b.centroid.y = atof(array[i][2].c_str());
-            b.area = atoi(array[i][3].c_str());
-            //printf("%d,%f,%f,%d\n", frameNum, b.centroid.x, b.centroid.y, b.area);
+            struct CvBlob * b = new CvBlob; // TODO: memory leak?
+            int frameNum = atoi(array[i][0].c_str());
+            b->centroid.x = atof(array[i][1].c_str());
+            b->centroid.y = atof(array[i][2].c_str());
+            b->area = atoi(array[i][3].c_str());
+            //printf("%d,%f,%f,%d\n", frameNum, b->centroid.x, b->centroid.y, b->area);
 
-            // New frame in the log file, process blobs for last frame
-            if (frameNum != lastFrameNum) {
-                counter.updateStats(blobs);
-                blobs.clear();
+            if (i == 0) {
                 lastFrameNum = frameNum;
             }
 
+            // New frame in the log file, process blobs for last frame
+            if (frameNum != lastFrameNum && blobs.size() != 0) {
+                //printf("Processing %d blobs %d -> %d\n", blobs.size(), lastFrameNum, frameNum);
+                counter.updateStats(blobs, lastFrameNum);
+                blobs.clear();
+                //it = blobs.begin();
+            } else {
+                //++it;
+            }
+
             // Insert new blob
-            blobs.insert(pair<CvLabel,CvBlob*>(i, &b));
+            blobs.insert(pair<CvLabel,CvBlob*>(i, b));
+            lastFrameNum = frameNum;
         }
 
         for (size_t j=0; j<array[i].size(); ++j)
