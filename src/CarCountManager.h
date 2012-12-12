@@ -6,7 +6,6 @@
 #include <opencv/cv.h>
 
 #include "cvblob.h"
-#include "RoadObject.h"
 #include "CarCounter.h"
 #include "CarCountManager.h"
 

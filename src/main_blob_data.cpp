@@ -3,7 +3,6 @@
 #include <opencv/cv.h>
 
 #include "cvblob.h"
-#include "RoadObject.h"
 #include "CarCounter.h"
 #include "CarCountManager.h"
 
@@ -122,7 +121,7 @@ int main(int argc, char* argv[]) {
     if (imgMask) {
         manager.setImgMask(imgMask);
     }
-
+#if 1
     // Process Data or Stream from Camera
     if (csvData) {
         manager.processCsvFile(csvData);
@@ -131,7 +130,7 @@ int main(int argc, char* argv[]) {
     } else if (videoFile) {
         manager.processVideoFile(videoFile);
     }
-
+#endif
 #if 0
     if (argc < 2) {
         printf("Usage: %s PATH_TO_RAW_AVI_VIDEO_FILE [IMAGE_MASK_JPG_OR_OTHER_FORMAT]", argv[0]);
@@ -154,6 +153,9 @@ int main(int argc, char* argv[]) {
     //filename = "/Users/j3bennet/afternoon_raw_cut.avi";
 
     CvCapture* capture = cvCaptureFromAVI(video_filename);
+    //CvCapture *capture = cvCreateFileCapture_FFMPEG("http://192.168.1.28/mjpg/video.mjpg?resolution=640x480&req_fps=10&.mjpg");
+    //CvCapture *capture=cvCaptureFromFile("http://192.168.1.28/axis-cgi/mjpg/video.cgi?resolution=640x480&req_fps=10&.mjpg");
+
 
     namedWindow("Capture ", CV_WINDOW_AUTOSIZE);
     namedWindow("Background", CV_WINDOW_AUTOSIZE);
@@ -236,7 +238,7 @@ int main(int argc, char* argv[]) {
     // Westbound Params
     Rect westTrafficBoundaries(260, 250, (600-260), (350-250));
     double expectedPathSlope = 0.2; // From experimentation
-    CarCounter counter(260);
+    CarCounter counter();
 
     CvSize vga;
     vga.height = 480;
