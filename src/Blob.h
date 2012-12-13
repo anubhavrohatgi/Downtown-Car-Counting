@@ -22,7 +22,7 @@ public:
 
     Blob(double x, double y, double area, int frameNumber) :
         x(x),
-        y(x),
+        y(y),
         area(area),
         frameNum(frameNumber)
     {
