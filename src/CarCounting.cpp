@@ -36,7 +36,7 @@ using namespace cvb;
 // FIXME
 //#include "LinearRegression.cpp"
 
-pair<double,double> leastSqrRegression(vector<CvBlob> &points, int numPointsToUse);
+pair<double,double> xyLeastSqrRegression(vector<CvBlob> &points, int numPointsToUse);
 
 
 

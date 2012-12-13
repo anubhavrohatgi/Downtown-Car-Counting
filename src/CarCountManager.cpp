@@ -55,31 +55,30 @@ int CarCountManager::processCsvFile(const char * path)
 
     // Map of blobs
     // We store them per frame so that they can be processed per frame like they would be if generated from a video
-    CvBlobs blobs;
+    vector<Blob> blobs;
     int lastFrameNum = 0;
 
     for (int i = 0; i < array.size(); i++)
     {
         if (array[i].size() >= 4) { // Expect at least 4 columns
             // Read Blob from row
-            struct CvBlob * b = new CvBlob; // TODO: memory leak?
             int frameNum = atoi(array[i][0].c_str());
-            b->centroid.x = atof(array[i][1].c_str());
-            b->centroid.y = atof(array[i][2].c_str());
-            b->area = atoi(array[i][3].c_str());
-
+            double x = atof(array[i][1].c_str());
+            double y = atof(array[i][2].c_str());
+            double area = atoi(array[i][3].c_str());
+            Blob * b = new Blob(x, y, area, frameNum);
             if (i == 0) {
                 lastFrameNum = frameNum;
             }
 
             // New frame in the log file, process blobs stored for last frame
             if (frameNum != lastFrameNum) {
-                counter.updateStats(blobs, lastFrameNum);
+                counter.updateStats(blobs, blobs.at(0).frameNum);
                 blobs.clear();
             }
 
             // Store new blob
-            blobs.insert(pair<CvLabel,CvBlob*>(i, b));
+            blobs.push_back(*b);
             lastFrameNum = frameNum;
         }
     }

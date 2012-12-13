@@ -5,7 +5,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv/cv.h>
 
-#include "cvblob.h"
+#include "Blob.h"
+#include "Blob.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,12 +32,12 @@ using namespace cv;
 using namespace std;
 using namespace cvb;
 
-static int globalID = 0;
+static int globalID = 1;
 
 class ObjectIdentifier {
 
 public:
-    ObjectIdentifier(CvBlob b);
+    ObjectIdentifier(Blob b);
 
     ~ObjectIdentifier();
 
@@ -45,15 +46,15 @@ public:
     int getLastSeenNFramesAgo();
 
     // Returns true if blob was accepted, false if not
-    virtual bool addBlob(CvBlob b);
+    virtual bool addBlob(Blob b);
 
     void printPoints();
 
     double distanceTravelled();
-    double errFromLine(CvBlob b);
-    double distanceFromLastBlob(CvBlob b);
+    double errFromLine(Blob b);
+    double distanceFromLastBlob(Blob b);
 
-    CvBlob getLastBlob();
+    Blob getLastBlob();
 
     int getNumBlobs();
 
@@ -66,35 +67,48 @@ public:
     // Returned in pixels per frame
     double getSpeed();
 
-    virtual bool inRange(CvBlob b);
-    virtual double distFromExpectedPath(CvBlob b);
-    static bool inStartingZone(CvBlob b);
+    virtual bool inRange(Blob b);
+    virtual double distFromExpectedPath(Blob b);
+    static bool inStartingZone(Blob b);
     bool inEndZone();
-    vector<CvBlob> * getBlobs();
+    vector<Blob> * getBlobs();
+
+    double errXY(double x, double y);
+    double errTX(int frameNum, double x);
+    double errTY(int frameNum, double y);
+
+    double distFromExpectedY(double x, double y);
+    double distFromExpectedY(double y, int frameNum);
+    double distFromExpectedX(double y, int frameNum);
+
+    bool continuesTrend(Blob b);
+
 
 private:
     int id;
 
-    double distanceBetweenBlobs(CvBlob b1, CvBlob b2);
+    double distanceBetweenBlobs(Blob b1, Blob b2);
 
     double expectedY(double x);
 
     double distance(double x1, double x2, double y1, double y2);
 
-    pair<double,double> leastSqrRegression(vector<CvBlob> &blobs, int numPointsToUse);
+    pair<double,double> xyLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
+    pair<double,double> tyLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
+    pair<double,double> txLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
 
     int lastSeen;
     int frameCount;
     int lastBlobFrameNum;
-    CvBlob lastBlob;
+    Blob lastBlob;
 
-    CvBlob closestBlob;
+    Blob closestBlob;
     double closestDistToOrigin;
 
-    CvBlob furthestBlob;
+    Blob furthestBlob;
     double furthestDistToOrigin;
 
-    vector<CvBlob> blobs;
+    vector<Blob> blobs;
 };
 
 #endif

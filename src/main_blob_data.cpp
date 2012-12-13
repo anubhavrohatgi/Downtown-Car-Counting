@@ -134,10 +134,10 @@ int main(int argc, char* argv[]) {
 #if 0
     if (argc < 2) {
         printf("Usage: %s PATH_TO_RAW_AVI_VIDEO_FILE [IMAGE_MASK_JPG_OR_OTHER_FORMAT]", argv[0]);
-        return 0;
+        //return 0;
     }
     // TODO: use string?
-    char * video_filename = argv[1];
+    char * video_filename = "/Users/j3bennet/sept9-5m-5fps.avi";
 
     bool useImgMask = false;
     if (argc > 2) {
@@ -368,7 +368,7 @@ int main(int argc, char* argv[]) {
                     if (blob.area > 0) {
                         char buf[120];
                         sprintf(buf, "%d,%f,%f,%d\n", frameCount, blob.centroid.x, blob.centroid.y, (int)blob.area);
-                        write_to_file("/Users/j3bennet/blobs1204-10fps-east.csv", buf);
+                        write_to_file("/Users/j3bennet/blobs152-5m-5fps-east.csv", buf);
                     }
             }
             //cvUpdateTracks(blobs, tracks, 10., 5);

@@ -6,6 +6,7 @@
 #include <opencv/cv.h>
 
 #include "cvblob.h"
+#include "Blob.h"
 #include "ObjectIdentifier.h"
 #include "CarCounter.h"
 
@@ -46,8 +47,8 @@ public:
 
     double getAvgSpeed(int numFrames);
 
-    int updateStats(CvBlobs& blobs);
-    int updateStats(CvBlobs& blobs, int frameNum);
+    int updateStats(std::vector<Blob>& blobs);
+    int updateStats(std::vector<Blob>& blobs, int frameNum);
 
 
 private:
@@ -62,9 +63,9 @@ private:
     Rect * boundaries;
 
     list<ObjectIdentifier> objects;
-    list<CvBlob> unidentifiedBlobs;
+    list<Blob> unidentifiedBlobs;
 
-    vector<CvBlob> allBlobs;
+    vector<Blob> allBlobs;
 
     int rosCreated;
 
