@@ -83,6 +83,15 @@ public:
 
     bool continuesTrend(Blob b);
 
+    double rValues()
+    {
+        return xyR + tyR + txR;
+    }
+
+    // TODO: make private
+    double xyR;
+    double tyR;
+    double txR;
 
 private:
     int id;
@@ -109,6 +118,7 @@ private:
     double furthestDistToOrigin;
 
     vector<Blob> blobs;
+    int numBlobs;
 };
 
 #endif

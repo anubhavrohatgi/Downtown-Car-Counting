@@ -15,7 +15,8 @@ public:
         x(b.centroid.x),
         y(b.centroid.y),
         area(b.area),
-        frameNum(frameNumber)
+        frameNum(frameNumber),
+        blobsAvgd(1)
     {
 
     }
@@ -53,7 +54,7 @@ public:
     double y;
     double area;
     int frameNum;
-
+    int blobsAvgd;
 private:
     CvBlob blob;
     int clusterId;

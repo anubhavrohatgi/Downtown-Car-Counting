@@ -8,9 +8,10 @@ pair<double,double> leastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
 ObjectIdentifier::ObjectIdentifier(Blob b) :
     lastSeen(0),
     frameCount(0),
-    id(++globalID),
+    id(1 + (globalID++ % 8)),
     closestDistToOrigin(0),
-    furthestDistToOrigin(0)
+    furthestDistToOrigin(0),
+    numBlobs(0)
 {
     addBlob(b);
 }
@@ -33,7 +34,7 @@ int ObjectIdentifier::getLastSeenNFramesAgo()
 
 int ObjectIdentifier::getNumBlobs()
 {
-    return blobs.size();
+    return numBlobs;
 }
 
 int ObjectIdentifier::getFirstFrame()
@@ -54,8 +55,23 @@ double ObjectIdentifier::getSpeed()
 
 bool ObjectIdentifier::addBlob(Blob b)
 {
+    numBlobs++;
+
+    if (distanceFromLastBlob(b) < 15 && false) {
+        // If very close, just treat as a single point
+        int avgd = ++blobs.at(blobs.size() - 1).blobsAvgd;
+        printf("AVGD %d\n", avgd);
+        double x = (1/avgd) * b.x + ((avgd - 1) / avgd) * blobs.at(blobs.size() - 1).x;
+        double y = (1/avgd) * b.y + ((avgd - 1) / avgd) * blobs.at(blobs.size() - 1).y;
+        double area = (1/avgd) * b.area + ((avgd - 1) / avgd) * blobs.at(blobs.size() - 1).area;
+        blobs.at(blobs.size() - 1).x = x;
+        blobs.at(blobs.size() - 1).y = y;
+        blobs.at(blobs.size() - 1).area = area;
+    } else {
+    }
     lastBlob = b;
     blobs.push_back(b);
+
     lastSeen = 0;
     lastBlobFrameNum = frameCount;
 
@@ -261,6 +277,8 @@ double ObjectIdentifier::distanceFromLastBlob(Blob b)
     return distanceBetweenBlobs(lastBlob, b);
 }
 
+
+
 // HELPER FUNCTION
 
 pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse)
@@ -345,6 +363,7 @@ pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, 
    printf("Coefficent of determination(r^2) = %0.5E\t\n", (SUMres - SUM_Yres)/SUMres);
    printf("Correlation coefficient(r) = %0.5E\t\n", sqrt(Rsqr));
 #endif
+   txR = sqrt(Rsqr);
    pair<double,double> result(slope,y_intercept);
    return result;
 }
@@ -373,9 +392,9 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
       //sum of x
       SUMx = SUMx + blobs.at(blobs.size() - 1 - i).frameNum;
       //sum of y
-      SUMy = SUMy + blobs.at(blobs.size() - 1 - i).x;
+      SUMy = SUMy + blobs.at(blobs.size() - 1 - i).y;
       //sum of squared x*y
-      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).frameNum * blobs.at(blobs.size() - 1 - i).x;
+      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).frameNum * blobs.at(blobs.size() - 1 - i).y;
       //sum of squared x
       SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i).frameNum * blobs.at(blobs.size() - 1 - i).frameNum;
    }
@@ -404,19 +423,19 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //current (y_i - a0 - a1 * x_i)^2
-      Yres = pow((blobs.at(blobs.size() - 1 - i).x - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).frameNum)), 2);
+      Yres = pow((blobs.at(blobs.size() - 1 - i).y - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).frameNum)), 2);
 
       //sum of (y_i - a0 - a1 * x_i)^2
       SUM_Yres += Yres;
 
       //current residue squared (y_i - AVGy)^2
-      res = pow(blobs.at(blobs.size() - 1 - i).x - AVGy, 2);
+      res = pow(blobs.at(blobs.size() - 1 - i).y - AVGy, 2);
 
       //sum of squared residues
       SUMres += res;
 #if 0
       printf ("   (%0.2f %0.2f)      %0.5E         %0.5E\n",
-       blobs.at(blobs.size() - 1 - i).frameNum, blobs.at(blobs.size() - 1 - i).x, res, Yres);
+       blobs.at(blobs.size() - 1 - i).frameNum, blobs.at(blobs.size() - 1 - i).y, res, Yres);
 #endif
    }
 
@@ -431,6 +450,7 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
    printf("Coefficent of determination(r^2) = %0.5E\t\n", (SUMres - SUM_Yres)/SUMres);
    printf("Correlation coefficient(r) = %0.5E\t\n", sqrt(Rsqr));
 #endif
+   tyR = sqrt(Rsqr);
    pair<double,double> result(slope,y_intercept);
    return result;
 }
@@ -517,6 +537,7 @@ pair<double,double> ObjectIdentifier::xyLeastSqrRegression(vector<Blob> &blobs, 
    printf("Coefficent of determination(r^2) = %0.5E\t\n", (SUMres - SUM_Yres)/SUMres);
    printf("Correlation coefficient(r) = %0.5E\t\n", sqrt(Rsqr));
 #endif
+   xyR = sqrt(Rsqr);
    pair<double,double> result(slope,y_intercept);
    return result;
 }

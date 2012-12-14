@@ -5,7 +5,7 @@
 #include "cvblob.h"
 #include "highgui.h"
 #include "CarCounter.h"
-#include "CarCountManager.h"
+#include "DataSourceManager.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +59,7 @@ void profileEnd() {
 
 int write_to_file(char const *fileName, char * line)
 {
-    printf("To File: %s", line);
+    //printf("To File: %s", line);
     FILE *f = fopen(fileName, "a");
     if (f == NULL) return -1;
     // you might want to check for out-of-disk-space here, too
@@ -78,27 +78,26 @@ struct ctx
 struct ctx* context;
 
 int frameCount = 0;
-
+int framesProcessed = 0;
+long last_time = 0;
 void *lock(void *data, void**p_pixels)
 {
-printf("LOCK %d\n", frameCount++);
-*p_pixels = context->pixels;
-
+    //printf("LOCK %d\n", frameCount++);
+    *p_pixels = context->pixels;
 }
 
 
 void display(void *data, void *id){
-printf("DISPLAY\n");
+//printf("DISPLAY\n");
 }
 
 void unlock(void *data, void *id, void *const *p_pixels){
-printf("UNLOCK\n");
-struct ctx *ctx = (struct ctx*)data;
-        /* VLC just rendered the video, but we can also render stuff */
-        uchar *pixels = (uchar*)*p_pixels;
-        processFrame(ctx->image);
-        //cvShowImage("test", ctx->image);
-
+    //printf("UNLOCK\n");
+    struct ctx *ctx = (struct ctx*)data;
+    /* VLC just rendered the video, but we can also render stuff */
+    uchar *pixels = (uchar*)*p_pixels;
+    //processFrame(ctx->image);
+    //cvShowImage("test", ctx->image);
 }
 
 int main(int argc, char* argv[]) {
@@ -113,14 +112,14 @@ int main(int argc, char* argv[]) {
     int c;
     int dataSources = 0;
 
-    while ((c = getopt (argc, argv, "d:i:v:m:f:l:h")) != -1) {
+    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:h")) != -1) {
         switch (c)
         {
-            case 'd':
+            case 'i':
                 csvData = optarg;
                 dataSources++;
                 break;
-            case 'i':
+            case 'c':
                 ipCamera = optarg;
                 dataSources++;
                 break;
@@ -131,7 +130,7 @@ int main(int argc, char* argv[]) {
             case 'm':
                 imgMask = optarg;
                 break;
-            case 'l':
+            case 'o':
                 csvLogFile = optarg;
                 break;
             case 'h':
@@ -147,7 +146,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    CarCountManager manager;
+    DataSourceManager manager;
 
     // Configure Manager
     if (csvLogFile) {
@@ -157,7 +156,7 @@ int main(int argc, char* argv[]) {
     if (imgMask) {
         manager.setImgMask(imgMask);
     }
-#if 0
+#if 1
     // Process Data or Stream from Camera
     if (csvData) {
         manager.processCsvFile(csvData);
@@ -167,7 +166,7 @@ int main(int argc, char* argv[]) {
         manager.processVideoFile(videoFile);
     }
 #endif
-
+#if 0
 
 // VLC STUFF
     libvlc_instance_t * inst;
@@ -289,7 +288,7 @@ void init()
 
     //CvCapture* capture = cvCaptureFromAVI(NULL);
 
-    eastbound_mask = imread("/Users/j3bennet/king_st_eastbound_mask.jpg",CV_LOAD_IMAGE_ANYCOLOR); // Read the file
+    eastbound_mask = imread("/Users/j3bennet/king_st_mask.jpg",CV_LOAD_IMAGE_ANYCOLOR); // Read the file
     westbound_mask = imread("/Users/j3bennet/king_st_westbound_mask.jpg",CV_LOAD_IMAGE_ANYCOLOR); // Read the file
 
     //Mat eastbound_mask = imread("/Users/j3bennet/eastbound_chunk.jpg", CV_LOAD_IMAGE_ANYCOLOR);   // Read the file
@@ -340,9 +339,6 @@ void init()
     vga.width = 640;
 
     namedWindow("video", CV_WINDOW_NORMAL);
-    namedWindow("fg-before", CV_WINDOW_NORMAL);
-    namedWindow("fg-after", CV_WINDOW_NORMAL);
-    namedWindow("fgmask", CV_WINDOW_NORMAL);
 }
 
 void processFrame(IplImage* orig)
@@ -354,7 +350,7 @@ void processFrame(IplImage* orig)
     try {
         cvtColor(frame, frame, CV_BGR2RGB); // TODO: fix innefficiency
         cv::add(frame, eastbound_mask, masked);
-        cv::imshow("video", frame);
+        //cv::imshow("video", frame);
     #if 1
         // Background Subtraction
         if (fgimg.empty()) {
@@ -385,11 +381,15 @@ void processFrame(IplImage* orig)
 
         cvFilterByArea(blobs, 100, 2000);
 
+        if (frameCount == 0) {
+            write_to_file("/Users/j3bennet/r1217.csv", "frameCount,blob.centroid.x,blob.centroid.y,(int)blob.area,blob.minx,blob.miny,blob.maxx,blob.maxy");
+        }
+
         for (CvBlobs::iterator it = blobs.begin(); it != blobs.end(); ++it) {
                 CvBlob blob = *(it->second);
                 if (blob.area > 0) {
                     char buf[120];
-                    sprintf(buf, "%d,%f,%f,%d\n", frameCount, blob.centroid.x, blob.centroid.y, (int)blob.area);
+                    sprintf(buf, "%d,%f,%f,%d,%d,%d,%d,%d\n", frameCount, blob.centroid.x, blob.centroid.y, (int)blob.area, blob.minx, blob.miny, blob.maxx, blob.maxy);
                     write_to_file("/Users/j3bennet/r1217.csv", buf);
                 }
         }
@@ -403,11 +403,14 @@ void processFrame(IplImage* orig)
 
 
         cvRenderBlobs(labelImg, blobs, &filtered_img, dstImg);
+        cvShowImage("dstImg", dstImg);
+
+
         //cvRenderBlobs(labelImg, blobs, frame, frame, CV_BLOB_RENDER_CENTROID|CV_BLOB_RENDER_BOUNDING_BOX);
         //cvRenderTracks(tracks, dstImg, dstImg, CV_TRACK_RENDER_ID|CV_TRACK_RENDER_BOUNDING_BOX|CV_TRACK_RENDER_TO_LOG);
         //cvRenderTracks(tracks, dstImg, dstImg, CV_TRACK_RENDER_ID|CV_TRACK_RENDER_BOUNDING_BOX);
     #endif
-        cvShowImage("dstImg", dstImg);
+
         //imshow("fg-after", fgimg);
         cvReleaseImage(&labelImg);
         cvReleaseImage(&dstImg);
@@ -429,8 +432,18 @@ void processFrame(IplImage* orig)
          }
     #endif
     #endif
+         framesProcessed++;
+         frameCount++;
+         gettimeofday(&profile, NULL);
+         if (profile.tv_sec - last_time >= 10) {
+             last_time = profile.tv_sec;
+             double fps = framesProcessed / 10;
+             framesProcessed = 0;
+             printf("time %d       frames %d  @ %f fps\n", profile.tv_sec, frameCount, fps);
+         }
 
     } catch (cv::Exception& e) {
         printf("Caught Exception: %s\n", e.what());
     }
+#endif
 }
