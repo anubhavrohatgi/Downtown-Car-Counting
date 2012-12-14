@@ -1,11 +1,21 @@
 #include "ImageProcessor.h"
 
-ImageProcessor::ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, CarCounter& c)
+using namespace cv;
+
+ImageProcessor::ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, CarCounter& c) :
+    mediaWidth(mediaWidth),
+    mediaHeight(mediaHeight),
+    counter(c)
 {
 
 }
 
-ImageProcess::~ImageProcessor()
+int processFrame(Mat frame)
+{
+
+}
+
+ImageProcessor::~ImageProcessor()
 {
 
 }

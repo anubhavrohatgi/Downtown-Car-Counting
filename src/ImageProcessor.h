@@ -6,7 +6,7 @@
 #include <opencv/cv.h>
 
 #include "Blob.h"
-#include "Blob.h"
+#include "CarCounter.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,18 +32,19 @@ using namespace cv;
 using namespace std;
 using namespace cvb;
 
-static int globalID = 1;
-
 class ImageProcessor {
 
 public:
     ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, CarCounter& c);
 
-    void processFrame()
+    void processFrame(Mat frame);
 
     ~ImageProcessor();
 
 private:
+    int mediaWidth;
+    int mediaHeight;
+    CarCounter& counter;
 
 };
 
