@@ -66,7 +66,7 @@ int CarCountManager::processCsvFile(const char * path)
             double x = atof(array[i][1].c_str());
             double y = atof(array[i][2].c_str());
             double area = atoi(array[i][3].c_str());
-            Blob * b = new Blob(x, y, area, frameNum);
+            Blob * b = new Blob(x, y, area, frameNum); // TODO: proper memory mgmt
             if (i == 0) {
                 lastFrameNum = frameNum;
             }
