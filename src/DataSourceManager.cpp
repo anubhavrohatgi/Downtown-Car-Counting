@@ -1,7 +1,7 @@
-#include "CarCountManager.h"
+#include "DataSourceManager.h"
 #include <fstream>
 
-CarCountManager::CarCountManager() :
+DataSourceManager::DataSourceManager() :
     logToCsv(false),
     useImgMask(false),
     csvLogFile(NULL),
@@ -10,29 +10,29 @@ CarCountManager::CarCountManager() :
 
 }
 
-CarCountManager::~CarCountManager()
+DataSourceManager::~DataSourceManager()
 {
 
 }
 
-void CarCountManager::setCsvLogFile(const char * path)
+void DataSourceManager::setCsvLogFile(const char * path)
 {
     logToCsv = true;
     csvLogFile = path;
 }
 
-void CarCountManager::setImgMask(const char * path)
+void DataSourceManager::setImgMask(const char * path)
 {
     useImgMask = true;
     imgMaskFile = path;
 }
 
-int CarCountManager::processVideoFile(const char * path)
+int DataSourceManager::processVideoFile(const char * path)
 {
 
 }
 
-int CarCountManager::processCsvFile(const char * path)
+int DataSourceManager::processCsvFile(const char * path)
 {
     // CSV Reading Code from: http://forums.codeguru.com/showthread.php?396459-Reading-CSV-file-into-an-array
     std::ifstream in(path);
@@ -62,7 +62,7 @@ int CarCountManager::processCsvFile(const char * path)
     {
         if (array[i].size() >= 4) { // Expect at least 4 columns
             // Read Blob from row
-            int frameNum = atoi(array[i][0].c_str());
+            int frameNum = atoi(array[i][0].c_str()) * 5;
             double x = atof(array[i][1].c_str());
             double y = atof(array[i][2].c_str());
             double area = atoi(array[i][3].c_str());
@@ -91,7 +91,7 @@ int CarCountManager::processCsvFile(const char * path)
     return counter.getCarCount();
 }
 
-int CarCountManager::processIpCamera(const char * ip)
+int DataSourceManager::processIpCamera(const char * ip)
 {
 
 }

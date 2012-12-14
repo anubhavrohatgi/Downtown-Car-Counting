@@ -1,5 +1,5 @@
-#ifndef _CAR_COUNT_MANAGER_H_
-#define _CAR_COUNT_MANAGER_H_
+#ifndef _DATA_SOURCE_MANAGER_H_
+#define _DATA_SOURCE_MANAGER_H_
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -8,7 +8,6 @@
 #include "cvblob.h"
 #include "Blob.h"
 #include "CarCounter.h"
-#include "CarCountManager.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,11 +35,11 @@ using namespace cvb;
 
 using namespace std;
 
-class CarCountManager {
+class DataSourceManager {
 
 public:
-    CarCountManager();
-    ~CarCountManager();
+    DataSourceManager();
+    ~DataSourceManager();
 
     void setCsvLogFile(const char * path);
     void setImgMask(const char * path);
