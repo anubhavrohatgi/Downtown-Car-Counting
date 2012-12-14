@@ -35,16 +35,32 @@ using namespace cvb;
 class ImageProcessor {
 
 public:
-    ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, CarCounter& c);
+    ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, CarCounter * c);
 
-    void processFrame(Mat frame);
+    int processFrame(Mat frame, bool displayFrame);
 
     ~ImageProcessor();
 
 private:
-    int mediaWidth;
-    int mediaHeight;
-    CarCounter& counter;
+    int frameCount;
+    CarCounter * counter;
+
+    // OpenCV Image Processing
+    Mat imgMask;
+    CvSize imgSize;
+
+    Mat aframe, foreground, image;
+    BackgroundSubtractorMOG2 mog;
+
+    cv::Mat frame;
+    cv::Mat back;
+    cv::Mat fore;
+    cv::BackgroundSubtractorMOG2 bg; //(0, 7, false); FIXME
+
+    Mat bgImg;
+
+    BackgroundSubtractorMOG2 bg_model;//(100, 3, 0.3, 5);
+    Mat img, fgmask, fgimg;
 
 };
 

@@ -6,6 +6,7 @@
 #include "highgui.h"
 #include "CarCounter.h"
 #include "DataSourceManager.h"
+#include "ImageProcessor.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,6 +69,8 @@ int write_to_file(char const *fileName, char * line)
     return 0;
 }
 
+ImageProcessor imageProc("/Users/j3bennet/king_st_mask.jpg", 640, 480, NULL);
+
 void processFrame(IplImage* orig);
 
 struct ctx
@@ -96,8 +99,10 @@ void unlock(void *data, void *id, void *const *p_pixels){
     struct ctx *ctx = (struct ctx*)data;
     /* VLC just rendered the video, but we can also render stuff */
     uchar *pixels = (uchar*)*p_pixels;
+    cv::Mat frame(ctx->image, false);// = Mat(orig, true);
+    imageProc.processFrame(frame, true);
     //processFrame(ctx->image);
-    //cvShowImage("test", ctx->image);
+    cvShowImage("test", ctx->image);
 }
 
 int main(int argc, char* argv[]) {
@@ -111,8 +116,10 @@ int main(int argc, char* argv[]) {
 
     int c;
     int dataSources = 0;
-
-    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:h")) != -1) {
+    bool displayFrame = false;
+    int fps = 0;
+// TODO: add fps parameter
+    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dh")) != -1) {
         switch (c)
         {
             case 'i':
@@ -132,6 +139,9 @@ int main(int argc, char* argv[]) {
                 break;
             case 'o':
                 csvLogFile = optarg;
+                break;
+            case 'd':
+                displayFrame = true;
                 break;
             case 'h':
                 // TODO: print usage
@@ -156,7 +166,7 @@ int main(int argc, char* argv[]) {
     if (imgMask) {
         manager.setImgMask(imgMask);
     }
-#if 1
+#if 0
     // Process Data or Stream from Camera
     if (csvData) {
         manager.processCsvFile(csvData);
@@ -166,7 +176,7 @@ int main(int argc, char* argv[]) {
         manager.processVideoFile(videoFile);
     }
 #endif
-#if 0
+
 
 // VLC STUFF
     libvlc_instance_t * inst;
@@ -193,7 +203,6 @@ int main(int argc, char* argv[]) {
              //int a = libvlc_vlm_add_broadcast(inst, "mybroadcast", "http://192.168.1.28/axis-cgi/mjpg/video.cgi?fps=30&nbrofframes=0", "#transcode{vcodec=h264,vb=0,scale=0,acodec=mp4a,ab=128,channels=2,samplerate=44100}:rtp{sdp=rtsp://:5544/}", 0, NULL, TRUE, 0);
 
 
-    init();
             cvNamedWindow("test", CV_WINDOW_AUTOSIZE);
             libvlc_media_t* media = NULL;
             libvlc_media_player_t* mediaPlayer = NULL;
@@ -249,201 +258,5 @@ int main(int argc, char* argv[]) {
 
              libvlc_release (inst);
     #endif
-
-#if 1
-
-
-#endif
 }
 
-Mat aframe, foreground, image;
-BackgroundSubtractorMOG2 mog;
-
-cv::Mat frame;
-cv::Mat back;
-cv::Mat fore;
-cv::BackgroundSubtractorMOG2 bg(0, 7, false);
-
-Mat eastbound_mask;
-Mat westbound_mask;
-Mat bgImg;
-
-int fps = 5;
-int totalFrame = 1000;
-
-CvBlobs blobs;
-
-BackgroundSubtractorMOG2 bg_model;//(100, 3, 0.3, 5);
-Mat img, fgmask, fgimg;
-
-CvSize vga;
-int key;
-
-void init()
-{
-    namedWindow("Capture ", CV_WINDOW_AUTOSIZE);
-    namedWindow("Background", CV_WINDOW_AUTOSIZE);
-    //bg.nmixtures = 3;
-    //bg.bShadowDetection = false;
-
-    //CvCapture* capture = cvCaptureFromAVI(NULL);
-
-    eastbound_mask = imread("/Users/j3bennet/king_st_mask.jpg",CV_LOAD_IMAGE_ANYCOLOR); // Read the file
-    westbound_mask = imread("/Users/j3bennet/king_st_westbound_mask.jpg",CV_LOAD_IMAGE_ANYCOLOR); // Read the file
-
-    //Mat eastbound_mask = imread("/Users/j3bennet/eastbound_chunk.jpg", CV_LOAD_IMAGE_ANYCOLOR);   // Read the file
-    //Mat eastbound_mask = imread("/Users/j3bennet/westbound_chunk.jpg", CV_LOAD_IMAGE_ANYCOLOR);   // Read the file
-    //Mat westbound_mask = imread("/Users/j3bennet/king_st_westbound_mask.jpg", CV_LOAD_IMAGE_ANYCOLOR);   // Read the file
-    //Mat bgImgGrey = imread("/Users/j3bennet/king_st_bg.jpg", CV_LOAD_IMAGE_GRAYSCALE);   // Read the file
-    bgImg =
-            imread("/Users/j3bennet/king_st_bg.jpg", CV_LOAD_IMAGE_ANYCOLOR); // Read the file // TODO: WTF is this ?
-
-
-    /* get fps, needed to set the delay */
-#if 0
-    int fps = (int) cvGetCaptureProperty(capture, CV_CAP_PROP_FPS);
-    int totalFrame = (int) cvGetCaptureProperty(capture,
-            CV_CAP_PROP_FRAME_COUNT);
-    printf("FPS: %d  TOTAL FRAMES %d\n", fps, totalFrame);
-#endif
-
-    /* display video */
-    //    cvNamedWindow( "video", 0 );
-    //    cvNamedWindow("foreground", 0);
-
-    //Mat bg_filtered;
-    //cv::add(bgImgGrey, mask, bg_filtered);
-
-#if 0
-    namedWindow("image", CV_WINDOW_NORMAL);
-    namedWindow("foreground mask", CV_WINDOW_NORMAL);
-    namedWindow("foreground image", CV_WINDOW_NORMAL);
-    namedWindow("mean background image", CV_WINDOW_NORMAL);
-#endif
-
-
-    //Mat bg_filtered;
-    //cv::add(bgImg, eastbound_mask, bg_filtered);
-#if 0
-    //update the model
-    for (int i = 0; i < 100; i++) {
-        bool update_bg_model = true;
-        bg_model(bg_filtered, fgmask, update_bg_model ? -1 : 0);
-        fgimg = Scalar::all(0);
-        bg_filtered.copyTo(fgimg, fgmask);
-
-    }
-#endif
-
-    vga.height = 480;
-    vga.width = 640;
-
-    namedWindow("video", CV_WINDOW_NORMAL);
-}
-
-void processFrame(IplImage* orig)
-{
-    cv::Mat frame(orig, false);// = Mat(orig, true);
-
-    // Mask Image
-    Mat masked;
-    try {
-        cvtColor(frame, frame, CV_BGR2RGB); // TODO: fix innefficiency
-        cv::add(frame, eastbound_mask, masked);
-        //cv::imshow("video", frame);
-    #if 1
-        // Background Subtraction
-        if (fgimg.empty()) {
-            fgimg.create(img.size(), img.type());
-        }
-
-        //update the model
-        bool update_bg_model = true; //(blobs.size() > 0 && frameCount > 300) ? false : true;
-        bg_model(masked, fgmask, update_bg_model ? -1 : 0);
-
-        fgimg = Scalar::all(0);
-        masked.copyTo(fgimg, fgmask);
-        //filtered.copyTo(fgimg, fgimg);
-
-        Mat bgimg;
-        bg_model.getBackgroundImage(bgimg);
-
-        cvtColor(fgimg, fgimg, CV_BGR2GRAY);
-        //threshold(fgimg, fgimg, 100, 255, 3);
-        //fgimg = GetThresholdedImage(fgimg);
-        IplImage filtered_img = fgimg;
-
-    #if 1
-        IplImage *labelImg = cvCreateImage(vga, IPL_DEPTH_LABEL, 1);
-        IplImage *dstImg = cvCreateImage(vga, IPL_DEPTH_8U, 3);
-
-        unsigned int result = cvLabel(&filtered_img, labelImg, blobs);
-
-        cvFilterByArea(blobs, 100, 2000);
-
-        if (frameCount == 0) {
-            write_to_file("/Users/j3bennet/r1217.csv", "frameCount,blob.centroid.x,blob.centroid.y,(int)blob.area,blob.minx,blob.miny,blob.maxx,blob.maxy");
-        }
-
-        for (CvBlobs::iterator it = blobs.begin(); it != blobs.end(); ++it) {
-                CvBlob blob = *(it->second);
-                if (blob.area > 0) {
-                    char buf[120];
-                    sprintf(buf, "%d,%f,%f,%d,%d,%d,%d,%d\n", frameCount, blob.centroid.x, blob.centroid.y, (int)blob.area, blob.minx, blob.miny, blob.maxx, blob.maxy);
-                    write_to_file("/Users/j3bennet/r1217.csv", buf);
-                }
-        }
-        //cvUpdateTracks(blobs, tracks, 10., 5);
-
-
-        int newROs = 0;
-
-        //printf("%d\n", blobs.size());
-
-
-
-        cvRenderBlobs(labelImg, blobs, &filtered_img, dstImg);
-        cvShowImage("dstImg", dstImg);
-
-
-        //cvRenderBlobs(labelImg, blobs, frame, frame, CV_BLOB_RENDER_CENTROID|CV_BLOB_RENDER_BOUNDING_BOX);
-        //cvRenderTracks(tracks, dstImg, dstImg, CV_TRACK_RENDER_ID|CV_TRACK_RENDER_BOUNDING_BOX|CV_TRACK_RENDER_TO_LOG);
-        //cvRenderTracks(tracks, dstImg, dstImg, CV_TRACK_RENDER_ID|CV_TRACK_RENDER_BOUNDING_BOX);
-    #endif
-
-        //imshow("fg-after", fgimg);
-        cvReleaseImage(&labelImg);
-        cvReleaseImage(&dstImg);
-        //imshow("fg-after", filtered_img);
-        //imshow("fgmask", fgmask);
-
-        //imshow("image", frame);
-        //imshow("foreground mask", fgmask);
-        //imshow("foreground image", fgimg);
-        if (!bgimg.empty()) {
-            //imshow("mean background image", bgimg );
-        }
-    #if 1
-        key = cvWaitKey(1);
-         if (key == 'p') {
-             do {
-                 key = cvWaitKey(1);
-             } while (key != 'p');
-         }
-    #endif
-    #endif
-         framesProcessed++;
-         frameCount++;
-         gettimeofday(&profile, NULL);
-         if (profile.tv_sec - last_time >= 10) {
-             last_time = profile.tv_sec;
-             double fps = framesProcessed / 10;
-             framesProcessed = 0;
-             printf("time %d       frames %d  @ %f fps\n", profile.tv_sec, frameCount, fps);
-         }
-
-    } catch (cv::Exception& e) {
-        printf("Caught Exception: %s\n", e.what());
-    }
-#endif
-}
