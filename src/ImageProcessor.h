@@ -35,14 +35,15 @@ using namespace cvb;
 class ImageProcessor {
 
 public:
-    ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, CarCounter * c);
+    ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, bool displayFrame, CarCounter * c);
 
-    int processFrame(Mat frame, bool displayFrame);
+    int processFrame(Mat frame);
 
     ~ImageProcessor();
 
 private:
     int frameCount;
+    bool displayFrame;
     CarCounter * counter;
 
     // OpenCV Image Processing

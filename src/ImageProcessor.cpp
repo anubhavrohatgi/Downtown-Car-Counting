@@ -3,8 +3,9 @@
 using namespace cv;
 using namespace std;
 
-ImageProcessor::ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, CarCounter * c) :
+ImageProcessor::ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, bool displayFrame, CarCounter * c) :
     frameCount(0),
+    displayFrame(displayFrame),
     counter(c)
 {
     imgSize.width = mediaWidth;
@@ -13,9 +14,12 @@ ImageProcessor::ImageProcessor(const char * imgMaskPath, int mediaWidth, int med
     imgMask = imread(imgMaskPath, CV_LOAD_IMAGE_ANYCOLOR); // Read the file
 
     bgImg = imread("/Users/j3bennet/king_st_bg.jpg", CV_LOAD_IMAGE_ANYCOLOR); // Read the file // TODO: WTF is this ?
+    if (displayFrame) {
+        cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
+    }
 }
 
-int ImageProcessor::processFrame(Mat frame, bool displayFrame)
+int ImageProcessor::processFrame(Mat frame)
 {
     // Mask Image
     CvBlobs cvBlobs;

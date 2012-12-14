@@ -7,6 +7,7 @@
 #include "CarCounter.h"
 #include "DataSourceManager.h"
 #include "ImageProcessor.h"
+#include "NetworkStream.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,41 +70,10 @@ int write_to_file(char const *fileName, char * line)
     return 0;
 }
 
-ImageProcessor imageProc("/Users/j3bennet/king_st_mask.jpg", 640, 480, NULL);
+// Testing ...
+ImageProcessor imageProc("/Users/j3bennet/king_st_mask.jpg", 640, 480, true, NULL);
+NetworkStream networkCamera("http://192.168.1.28/axis-cgi/mjpg/video.cgi?fps=10&nbrofframes=0", &imageProc, 640, 480);
 
-void processFrame(IplImage* orig);
-
-struct ctx
-{
-        IplImage* image;
-        uchar*    pixels;
-};
-struct ctx* context;
-
-int frameCount = 0;
-int framesProcessed = 0;
-long last_time = 0;
-void *lock(void *data, void**p_pixels)
-{
-    //printf("LOCK %d\n", frameCount++);
-    *p_pixels = context->pixels;
-}
-
-
-void display(void *data, void *id){
-//printf("DISPLAY\n");
-}
-
-void unlock(void *data, void *id, void *const *p_pixels){
-    //printf("UNLOCK\n");
-    struct ctx *ctx = (struct ctx*)data;
-    /* VLC just rendered the video, but we can also render stuff */
-    uchar *pixels = (uchar*)*p_pixels;
-    cv::Mat frame(ctx->image, false);// = Mat(orig, true);
-    imageProc.processFrame(frame, true);
-    //processFrame(ctx->image);
-    cvShowImage("test", ctx->image);
-}
 
 int main(int argc, char* argv[]) {
 
@@ -118,7 +88,7 @@ int main(int argc, char* argv[]) {
     int dataSources = 0;
     bool displayFrame = false;
     int fps = 0;
-// TODO: add fps parameter
+// TODO: add fps parameter, w, h params
     while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dh")) != -1) {
         switch (c)
         {
@@ -177,86 +147,5 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-
-// VLC STUFF
-    libvlc_instance_t * inst;
-             libvlc_media_player_t *mp;
-             libvlc_media_t *m;
-
-             const char * const vlc_args[] = {
-             "--no-media-library",
-             "--reset-plugins-cache",
-             "--no-stats",
-             "--no-osd",
-             "--no-video-title-show",
-             "--plugin-path=/usr/local/lib/"};
-
-             const char * const vlc2_args[] = {
-             "--plugin-path=/usr/local/lib"};
-
-             /* Load the VLC engine */
-             //inst = libvlc_new (6, vlc_args);
-    #if 1
-             /* Create a new item */
-    //         m = libvlc_media_new_path (inst, "http://mycool.movie.com/test.mov");
-    printf("B4\n");
-             //int a = libvlc_vlm_add_broadcast(inst, "mybroadcast", "http://192.168.1.28/axis-cgi/mjpg/video.cgi?fps=30&nbrofframes=0", "#transcode{vcodec=h264,vb=0,scale=0,acodec=mp4a,ab=128,channels=2,samplerate=44100}:rtp{sdp=rtsp://:5544/}", 0, NULL, TRUE, 0);
-
-
-            cvNamedWindow("test", CV_WINDOW_AUTOSIZE);
-            libvlc_media_t* media = NULL;
-            libvlc_media_player_t* mediaPlayer = NULL;
-            char const* vlc_argv[] = {"--plugin-path", "/usr/local/lib"};
-            libvlc_instance_t* instance = libvlc_new(6,vlc_args);
-            media = libvlc_media_new_path(instance, "http://192.168.1.28/axis-cgi/mjpg/video.cgi?fps=10&nbrofframes=0");
-            mediaPlayer = libvlc_media_player_new_from_media(media);
-            libvlc_media_release(media);
-
-            //media = libvlc_media_new_path(instance, "http://137.82.120.10:8008");
-
-            context = ( struct ctx* )malloc( sizeof( *context ) );
-            context->image = cvCreateImage(cvSize(640, 480), IPL_DEPTH_8U, 4);
-        context->pixels = (unsigned char *)context->image->imageData;
-
-            //libvlc_media_player_set_media( mediaPlayer, media);
-            libvlc_video_set_callbacks(mediaPlayer, lock, unlock, display, context);
-            libvlc_video_set_format(mediaPlayer, "RV32", 640, 480, 640*4);
-            libvlc_media_player_play(mediaPlayer);
-
-
-            while(1)
-            {
-               cvWaitKey(10);
-
-            }
-             /* Create a media player playing environement */
-             mp = libvlc_media_player_new_from_media (m);
-
-             /* No need to keep the media now */
-             libvlc_media_release (m);
-
-         #if 0
-             /* This is a non working code that show how to hooks into a window,
-              * if we have a window around */
-              libvlc_media_player_set_xdrawable (mp, xdrawable);
-             /* or on windows */
-              libvlc_media_player_set_hwnd (mp, hwnd);
-             /* or on mac os */
-              libvlc_media_player_set_nsobject (mp, view);
-          #endif
-
-             /* play the media_player */
-             libvlc_media_player_play (mp);
-
-             sleep (10); /* Let it play a bit */
-
-             /* Stop playing */
-             libvlc_media_player_stop (mp);
-
-             /* Free the media_player */
-             libvlc_media_player_release (mp);
-
-             libvlc_release (inst);
-    #endif
+    networkCamera.startProcessing();
 }
-

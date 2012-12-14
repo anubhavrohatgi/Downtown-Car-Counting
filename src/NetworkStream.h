@@ -5,8 +5,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv/cv.h>
 
+#include <vlc/vlc.h>
+
 #include "Blob.h"
-#include "Blob.h"
+#include "ImageProcessor.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,17 +34,25 @@ using namespace cv;
 using namespace std;
 using namespace cvb;
 
-static int globalID = 1;
-
 class NetworkStream {
 
 public:
-    NetworkStream(const char * networkStream, const char * pluginLocation, int mediaWidth, int mediaHeight) { } // TODO: Callback
+    NetworkStream(const char * networkStream, ImageProcessor * imgProc, int mediaWidth, int mediaHeight);
 
-    ~NetworkStream() { }
+    // Does not return
+    void startProcessing();
+
+    ImageProcessor * getImageProcessor()
+    {
+        return imageProcessor;
+    }
+
+    ~NetworkStream();
 
 private:
-
+    ImageProcessor * imageProcessor;
+    libvlc_instance_t * libVlcInstance;
+    libvlc_media_player_t* mediaPlayer;
 };
 
 #endif
