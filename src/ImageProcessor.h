@@ -35,7 +35,12 @@ using namespace cvb;
 class ImageProcessor {
 
 public:
-    ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, bool displayFrame, CarCounter * c);
+    ImageProcessor(CarCounter * c);
+
+    void setROI(Rect r) {
+        roi = r;
+        useROI = true;
+    }
 
     int processFrame(Mat frame);
 
@@ -43,26 +48,13 @@ public:
 
 private:
     int frameCount;
-    bool displayFrame;
+    bool useROI;
+    Rect roi;
     CarCounter * carCounter;
-
-    // OpenCV Image Processing
-    Mat imgMask;
-    CvSize imgSize;
-
-    Mat aframe, foreground, image;
-    BackgroundSubtractorMOG2 mog;
-
-    cv::Mat frame;
-    cv::Mat back;
-    cv::Mat fore;
-    cv::BackgroundSubtractorMOG2 bg; //(0, 7, false); FIXME
-
-    Mat bgImg;
+    IplImage * labelImg;
+    IplImage * dstImg;
 
     BackgroundSubtractorMOG2 bg_model;//(100, 3, 0.3, 5);
-    Mat img, fgmask, fgimg;
-
 };
 
 #endif

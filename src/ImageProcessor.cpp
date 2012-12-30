@@ -3,64 +3,53 @@
 using namespace cv;
 using namespace std;
 
-ImageProcessor::ImageProcessor(const char * imgMaskPath, int mediaWidth, int mediaHeight, bool displayFrame, CarCounter * c) :
-    frameCount(0),
-    displayFrame(displayFrame),
-    carCounter(c)
-{
-    imgMask = imread(imgMaskPath, CV_LOAD_IMAGE_ANYCOLOR); // Read the file
+#define SHOW_FRAMES (TRUE)
 
-    bgImg = imread("/Users/j3bennet/king_st_bg.jpg", CV_LOAD_IMAGE_ANYCOLOR); // Read the file // TODO: WTF is this ?
-    if (displayFrame) {
-        cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
-    }
+ImageProcessor::ImageProcessor(CarCounter * c) :
+    frameCount(0),
+    useROI(false),
+    carCounter(c),
+    labelImg(NULL),
+    dstImg(NULL)
+{
+#if SHOW_FRAMES
+    cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
+#endif
 }
 
 int ImageProcessor::processFrame(Mat frame)
 {
-    // Mask Image
     CvBlobs cvBlobs;
+    frameCount++;
 
     try {
-        printf("TYPE %d %d\n", frame.type(), CV_8UC4);
 
-        Rect roi(265, 230, 375, 250);
-        Mat cropped = frame(roi);
-        Mat masked(375, 250, CV_8UC3);// = new Mat(375, 250, CV_8UC3);
-        masked = frame(roi);
-
-        try {
-            cvtColor(cropped, masked, CV_RGBA2RGB); // TODO: fix innefficiency
-        } catch (Exception e) {
-            printf("CAUGHT MOTHER 1\n");
+        if (useROI) {
+            frame = frame(roi);
         }
 
-        printf("W %d H %d T %d\n", masked.rows, masked.cols, masked.type());
+        cvtColor(frame, frame, CV_RGBA2RGB); // Convert to RGB required for background subtractor
 
-        //cv::add(frame, imgMask, masked);
-        //masked = frame;
-
-
-        //masked = frame;
-
-        // Background Subtraction
-        if (fgimg.empty()) {
-            //fgimg.create(masked.size(), masked.type());
+        // Slow down learning rate over time as we have enough images for a stable BG image
+        double learningRate;
+        if (frameCount < 100) {
+            learningRate = -1;
+        } else if (frameCount < 1000) {
+            learningRate = -.1;
+        } else {
+            learningRate = -0.001;
         }
 
-        //update the model
-        bg_model.operator()(masked,fgmask, -0.01); //(masked, fgmask); TODO: try setting learning rate very low so that objs don't get absorbed into BG
-        cv::imshow("FGMASK", fgmask);
-        bg_model.getBackgroundImage(bgImg);
-        cv::imshow("BG", bgImg);
+        Mat fgmask;
+        bg_model.operator()(frame,fgmask, learningRate); //(masked, fgmask); TODO: try setting learning rate very low so that objs don't get absorbed into BG
 
-        fgimg = Scalar::all(0);
-        masked.copyTo(fgimg, fgmask);
-        //filtered.copyTo(fgimg, fgimg);
-cv::imshow("FGIMG", fgimg);
-cv::imshow("MASKED-COPY", masked);
+        if (frameCount < 10) {
+            // Just do BG model updating for the first few frames
+            return 0;
+        }
 
-//cv::imshow("FGMASK", fgmask);
+        Mat fgimg;
+        frame.copyTo(fgimg, fgmask);
 
 // Help with quality of data?
 //cv::erode(fgimg,fgimg,cv::Mat());
@@ -68,54 +57,56 @@ cv::imshow("MASKED-COPY", masked);
 
 //cv::imshow("ERODED", fgimg);
 
-#if 0
-        ÊÊÊÊÊÊÊÊbg.operator ()(frame,fore);
-        ÊÊÊÊÊÊÊÊbg.getBackgroundImage(back);
-        ÊÊÊÊÊÊÊÊcv::findContours(fore,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
-        ÊÊÊÊÊÊÊÊcv::drawContours(frame,contours,-1,cv::Scalar(0,0,255),2);
-        ÊÊÊÊÊÊÊÊcv::imshow("Frame",frame);
-        ÊÊÊÊÊÊÊÊcv::imshow("Background",back);
-
-#endif
-        try {
-            //cvtColor(fgimg, fgimg, CV_BGR2GRAY);
-        } catch (Exception e) {
-            printf("CAUGHT MOTHER 2\n");
-        }
+        // Convert to grayscale, required by cvBlob
+        cvtColor(fgimg, fgimg, CV_RGB2GRAY);
 
         //threshold(fgimg, fgimg, 100, 255, 3);
         //fgimg = GetThresholdedImage(fgimg);
+
+        // Use old-style OpenCV IplImage required by cvBlob
         IplImage filtered_img = fgimg;
 
-        //Mat labelImg(imgSize, IPL_DEPTH_LABEL, 1);
 
-        IplImage *labelImg = cvCreateImage(imgSize, IPL_DEPTH_LABEL, 1);
-        IplImage *dstImg = cvCreateImage(imgSize, IPL_DEPTH_8U, 3);
-        //cvShowImage("dstImg1", dstImg);
-#if 0
+        if (labelImg == NULL) {
+            CvSize imgSize;
+            imgSize.width = frame.cols;
+            imgSize.height = frame.rows;
+            labelImg = cvCreateImage(imgSize, IPL_DEPTH_LABEL, 1);
+#if SHOW_FRAMES
+            dstImg = cvCreateImage(imgSize, IPL_DEPTH_8U, 3);
+#endif
+        } else {
+            // Clear past img data
+            cvSet(labelImg, cvScalar(0));
+#if SHOW_FRAMES
+            cvSet(dstImg, cvScalar(0,0,0));
+#endif
+        }
 
-        unsigned int result = cvLabel(&filtered_img, labelImg, cvBlobs);
+        // Run blob-detection algorithm from cvBlob
+        cvLabel(&filtered_img, labelImg, cvBlobs);
 
-        cvFilterByArea(cvBlobs, 20, 20000);
+        // Filter out really small blobs
+        cvFilterByArea(cvBlobs, 100, 20000);
 
         printf("Blobs Size: %d\n", cvBlobs.size());
         if (carCounter) {
             vector<Blob> blobs;
             for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
                     CvBlob blob = *(it->second);
-                    Blob * b = new Blob(blob, frameCount++);
+                    Blob * b = new Blob(blob, frameCount);
                     blobs.push_back(*b);
             }
         }
 
-        if (displayFrame) {
-            cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
-            cvShowImage("dstImg", dstImg);
-        }
-
-
-        cvReleaseImage(&labelImg);
-        cvReleaseImage(&dstImg);
+#if SHOW_FRAMES
+        Mat bgImg;
+        bg_model.getBackgroundImage(bgImg);
+        cv::imshow("BG", bgImg);
+        cv::imshow("FGMASK", fgmask);
+        cv::imshow("FGIMG", fgimg);
+        cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg); // NOTE: if ROI is used, weird wrap around is seen in rendered dstImg
+        cvShowImage("dstImg", dstImg);
 #endif
 
     } catch (cv::Exception& e) {
@@ -126,6 +117,6 @@ cv::imshow("MASKED-COPY", masked);
 
 ImageProcessor::~ImageProcessor()
 {
-
+    cvReleaseImage(&labelImg);
+    cvReleaseImage(&dstImg);
 }
-

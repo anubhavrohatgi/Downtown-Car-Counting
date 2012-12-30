@@ -71,7 +71,7 @@ int write_to_file(char const *fileName, char * line)
 }
 
 // Testing ...
-ImageProcessor imageProc("/Users/j3bennet/king_st_mask.jpg", 640, 480, true, NULL);
+ImageProcessor imageProc(NULL);
 NetworkStream networkCamera("http://192.168.1.28/axis-cgi/mjpg/video.cgi?fps=10&nbrofframes=0", &imageProc, 640, 480);
 
 
@@ -146,6 +146,9 @@ int main(int argc, char* argv[]) {
         manager.processVideoFile(videoFile);
     }
 #endif
+
+    cv::Rect roi(265, 230, 375, 250);
+    imageProc.setROI(roi);
 
     networkCamera.startProcessing();
 }
