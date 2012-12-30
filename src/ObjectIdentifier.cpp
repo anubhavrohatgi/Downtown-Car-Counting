@@ -2,6 +2,8 @@
 
 #include <limits>
 
+using namespace std;
+
 // Forward declaration
 pair<double,double> leastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
 

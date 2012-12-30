@@ -1,46 +1,9 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv/cv.h>
+#include <sys/time.h>
 
-#include "cvblob.h"
-#include "highgui.h"
 #include "CarCounter.h"
 #include "DataSourceManager.h"
 #include "ImageProcessor.h"
 #include "NetworkStream.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <iostream>
-
-#include <vlc/vlc.h>
-
-#include "opencv2/video/tracking.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/video/background_segm.hpp"
-#include "opencv2/features2d/features2d.hpp"
-
-#include "opencv2/flann/flann_base.hpp"
-
-/* time example */
-#include <stdio.h>
-#include <time.h>
-
-#include <stdio.h>
-
-using namespace cv;
-
-using namespace std;
-using namespace cvb;
-
-
-// FIXME
-//#include "LinearRegression.cpp"
-
-
-#include <sys/time.h>
 
 // Hack to measure how long certain operations take (in ms and us)
 // Call profileStart() followed by profileEnd() and it'll print the diff of those call times

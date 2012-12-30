@@ -1,5 +1,7 @@
 #include "CarCounter.h"
 
+using namespace std;
+
 //#include <limit>
 
 FILE *f = NULL;

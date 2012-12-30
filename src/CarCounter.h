@@ -1,41 +1,11 @@
 #ifndef _CAR_COUNTER_H_
 #define _CAR_COUNTER_H_
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv/cv.h>
-
-#include "cvblob.h"
 #include "Blob.h"
 #include "ObjectIdentifier.h"
-#include "CarCounter.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <iostream>
-
-#include "opencv2/video/tracking.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/video/background_segm.hpp"
-#include "opencv2/features2d/features2d.hpp"
-
-#include "opencv2/flann/flann_base.hpp"
-
-/* time example */
-#include <stdio.h>
-#include <time.h>
-
-#include <stdio.h>
-
-using namespace cv;
-
-using namespace std;
-using namespace cvb;
-
-// TODO: args in order, m_ as well
 class CarCounter {
+
 public:
     CarCounter();
 
@@ -60,12 +30,12 @@ private:
     int xBoundary;
     bool useSlopeOfPathFilter;
 
-    Rect * boundaries;
+    cv::Rect * boundaries;
 
-    list<ObjectIdentifier> objects;
-    list<Blob> unidentifiedBlobs;
+    std::list<ObjectIdentifier> objects;
+    std::list<Blob> unidentifiedBlobs;
 
-    vector<Blob> allBlobs;
+    std::vector<Blob> allBlobs;
 
     int rosCreated;
 

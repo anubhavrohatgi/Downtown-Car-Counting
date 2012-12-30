@@ -1,36 +1,7 @@
 #ifndef _OBJECT_IDENTIFIER_H_
 #define _OBJECT_IDENTIFIER_H_
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv/cv.h>
-
 #include "Blob.h"
-#include "Blob.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <iostream>
-
-#include "opencv2/video/tracking.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/video/background_segm.hpp"
-#include "opencv2/features2d/features2d.hpp"
-
-#include "opencv2/flann/flann_base.hpp"
-
-/* time example */
-#include <stdio.h>
-#include <time.h>
-
-#include <stdio.h>
-
-using namespace cv;
-
-using namespace std;
-using namespace cvb;
 
 static int globalID = 1;
 
@@ -71,7 +42,7 @@ public:
     virtual double distFromExpectedPath(Blob b);
     static bool inStartingZone(Blob b);
     bool inEndZone();
-    vector<Blob> * getBlobs();
+    std::vector<Blob> * getBlobs();
 
     double errXY(double x, double y);
     double errTX(int frameNum, double x);
@@ -102,9 +73,9 @@ private:
 
     double distance(double x1, double x2, double y1, double y2);
 
-    pair<double,double> xyLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
-    pair<double,double> tyLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
-    pair<double,double> txLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
+    std::pair<double,double> xyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
+    std::pair<double,double> tyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
+    std::pair<double,double> txLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
 
     int lastSeen;
     int frameCount;
@@ -117,7 +88,7 @@ private:
     Blob furthestBlob;
     double furthestDistToOrigin;
 
-    vector<Blob> blobs;
+    std::vector<Blob> blobs;
     int numBlobs;
 };
 

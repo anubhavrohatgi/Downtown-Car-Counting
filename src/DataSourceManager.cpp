@@ -1,6 +1,8 @@
 #include "DataSourceManager.h"
 #include <fstream>
 
+using namespace std;
+
 DataSourceManager::DataSourceManager() :
     logToCsv(false),
     useImgMask(false),
