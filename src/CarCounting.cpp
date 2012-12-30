@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
     // Westbound Params
     Rect westTrafficBoundaries(260, 250, (600-260), (350-250));
     double expectedPathSlope = 0.2; // From experimentation
-    CarCounter counter(50, &westTrafficBoundaries, true, expectedPathSlope);
+    CarCounter carCounter(50, &westTrafficBoundaries, true, expectedPathSlope);
 
     CvSize vga;
     vga.height = 480;
@@ -305,7 +305,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (stateProcessCounts) {
-                newROs = counter.updateStats(blobs);
+                newROs = carCounter.updateStats(blobs);
                 //printf("AVG SPEED %.2f\n", counter.getAvgSpeed(2));
             }
 
@@ -313,8 +313,8 @@ int main(int argc, char* argv[]) {
                 // Video clip is done, let everything timeout ...
                 printf("Starting timeout sequence ...\n");
                 blobs.clear();
-                for (int i = 0; i < counter.getMaxFrameTimeout(); i++) {
-                    newROs = counter.updateStats(blobs);
+                for (int i = 0; i < carCounter.getMaxFrameTimeout(); i++) {
+                    newROs = carCounter.updateStats(blobs);
                 }
             }
 

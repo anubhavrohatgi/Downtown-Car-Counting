@@ -44,7 +44,7 @@ public:
 private:
     int frameCount;
     bool displayFrame;
-    CarCounter * counter;
+    CarCounter * carCounter;
 
     // OpenCV Image Processing
     Mat imgMask;
