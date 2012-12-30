@@ -12,98 +12,104 @@ ImageProcessor::ImageProcessor(const char * imgMaskPath, int mediaWidth, int med
     imgSize.height = mediaHeight;
 
     imgMask = imread(imgMaskPath, CV_LOAD_IMAGE_ANYCOLOR); // Read the file
-    if (imgMask.cols == 0) {
-        printf("Couldn't Read: %s\n", imgMaskPath);
-    }
 
-    bgImg = imread("/Users/j3bennet/king_st_bg_temp.jpg", CV_LOAD_IMAGE_ANYCOLOR); // Read the file // TODO: WTF is this ?
-    if (bgImg.cols == 0) {
-        printf("Couldn't Read BG IMG: %s\n", "PATH");
-    }
+    bgImg = imread("/Users/j3bennet/king_st_bg.jpg", CV_LOAD_IMAGE_ANYCOLOR); // Read the file // TODO: WTF is this ?
     if (displayFrame) {
         cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
     }
 }
 
-int ImageProcessor::processFrame(Mat in_frame)
+int ImageProcessor::processFrame(Mat frame)
 {
     // Mask Image
     CvBlobs cvBlobs;
-    Mat masked;
 
-    // Crop image
-    Rect roi(265, 230, 375, 250);
-    Mat cropped = in_frame(roi);
-
-    // To gray scale image
-    cvtColor(cropped, cropped, CV_BGR2GRAY);
-
-    //cv::imshow("dstImg", cropped);
-
-#if 1
-    //cvtColor(frame, frame, CV_BGR2RGB); // TODO: fix innefficiency
     try {
-    //cv::add(frame, imgMask, masked);
-    }     catch (cv::Exception& e) {
-        printf("Caught 1st Exception in ImageProcessor: %s\n", e.what());
-    }
+        printf("TYPE %d %d\n", frame.type(), CV_8UC4);
 
-try {
-    // Background Subtraction
-    if (fgimg.empty()) {
-        fgimg.create(cropped.size(), cropped.type());
-    }
+        Rect roi(265, 230, 375, 250);
+        Mat cropped = frame(roi);
+        Mat masked(375, 250, CV_8UC3);// = new Mat(375, 250, CV_8UC3);
+        masked = frame(roi);
 
-    //update the model
-    bool update_bg_model = true; //(blobs.size() > 0 && frameCount > 300) ? false : true;
-    bg_model(cropped, fgmask, update_bg_model ? -1 : 0);
+        cvtColor(cropped, masked, CV_RGBA2RGB); // TODO: fix innefficiency
 
-    fgimg = Scalar::all(0);
-    masked.copyTo(fgimg, fgmask);
-    //filtered.copyTo(fgimg, fgimg);
-} catch (cv::Exception& e) {
-    printf("Caught 2nd Exception in ImageProcessor: %s\n", e.what());
-}
-    //Mat bgimg;
-    //bg_model.getBackgroundImage(bgimg);
+        printf("W %d H %d T %d\n", masked.rows, masked.cols, masked.type());
 
-    //cvtColor(fgimg, fgimg, CV_BGR2GRAY);
-    //threshold(fgimg, fgimg, 100, 255, 3);
-    //fgimg = GetThresholdedImage(fgimg);
-    IplImage filtered_img = fgimg;
+        //cv::add(frame, imgMask, masked);
+        //masked = frame;
 
-    IplImage *dstImg = cvCreateImage(imgSize, IPL_DEPTH_8U, 3);
-#endif
-    imgSize.width = 640;
-    imgSize.height = 480;
-    IplImage *labelImg = cvCreateImage(imgSize, IPL_DEPTH_LABEL, 1);
-    IplImage croppedIpl = in_frame;
-    unsigned int result = cvLabel(&filtered_img, labelImg, cvBlobs);
-    printf("RES %d\n", result);
-    cvShowImage("HMMM", &croppedIpl);
-    printf("BLOBS %d\n", cvBlobs.size());
 
-    cvFilterByArea(cvBlobs, 100, 2000);
+        //masked = frame;
 
-    if (counter) {
-        vector<Blob> blobs;
-        for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
-                CvBlob blob = *(it->second);
-                Blob * b = new Blob(blob, frameCount++);
-                blobs.push_back(*b);
+        // Background Subtraction
+        if (fgimg.empty()) {
+            fgimg.create(img.size(), img.type());
         }
+
+        //update the model
+        bg_model.operator()(masked,fgmask); //(masked, fgmask);
+        cv::imshow("MASKED1", masked);
+
+        //fgimg = Scalar::all(0);
+        masked.copyTo(fgimg, fgmask);
+        //filtered.copyTo(fgimg, fgimg);
+cv::imshow("FGIMG", fgimg);
+cv::imshow("FGMASK", fgmask);
+
+// Help with quality of data?
+//cv::erode(fgimg,fgimg,cv::Mat());
+//cv::dilate(fgimg,fgimg,cv::Mat());
+
+cv::imshow("ERODED", fgimg);
+
+#if 0
+                bg.operator ()(frame,fore);
+                bg.getBackgroundImage(back);
+                cv::findContours(fore,contours,CV_RETR_EXTERNAL,CV_CHAIN_APPROX_NONE);
+                cv::drawContours(frame,contours,-1,cv::Scalar(0,0,255),2);
+                cv::imshow("Frame",frame);
+                cv::imshow("Background",back);
+
+#endif
+
+        cvtColor(fgimg, fgimg, CV_BGR2GRAY);
+        //threshold(fgimg, fgimg, 100, 255, 3);
+        //fgimg = GetThresholdedImage(fgimg);
+        IplImage filtered_img = fgimg;
+
+        //Mat labelImg(imgSize, IPL_DEPTH_LABEL, 1);
+        IplImage *labelImg = cvCreateImage(imgSize, IPL_DEPTH_LABEL, 1);
+        IplImage *dstImg = cvCreateImage(imgSize, IPL_DEPTH_8U, 3);
+        cvShowImage("dstImg1", dstImg);
+
+        unsigned int result = cvLabel(&filtered_img, labelImg, cvBlobs);
+
+        cvFilterByArea(cvBlobs, 20, 20000);
+
+        printf("Blobs Size: %d\n", cvBlobs.size());
+
+        if (counter) {
+            vector<Blob> blobs;
+            for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
+                    CvBlob blob = *(it->second);
+                    Blob * b = new Blob(blob, frameCount++);
+                    blobs.push_back(*b);
+            }
+        }
+
+        if (displayFrame) {
+            cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
+            cvShowImage("dstImg", dstImg);
+        }
+
+
+        cvReleaseImage(&labelImg);
+        cvReleaseImage(&dstImg);
+
+    } catch (cv::Exception& e) {
+        printf("Caught Exception in ImageProcessor: %s\n", e.what());
     }
-
-    if (displayFrame && false) {
-        IplImage frame = in_frame;
-        cvRenderBlobs(labelImg, cvBlobs, &frame, &frame);
-        ///cv::imshow("dstImg", cropped);
-    }
-
-
-    //cvReleaseImage(&labelImg);
-    //cvReleaseImage(&dstImg);
-
     return cvBlobs.size();
 }
 
