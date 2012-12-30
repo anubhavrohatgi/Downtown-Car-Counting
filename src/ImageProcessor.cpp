@@ -3,18 +3,17 @@
 using namespace cv;
 using namespace std;
 
-#define SHOW_FRAMES (TRUE)
-
-ImageProcessor::ImageProcessor(CarCounter * c) :
+ImageProcessor::ImageProcessor(CarCounter * c, bool showFrames) :
     frameCount(0),
     useROI(false),
     carCounter(c),
+    showFrames(showFrames),
     labelImg(NULL),
     dstImg(NULL)
 {
-#if SHOW_FRAMES
-    cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
-#endif
+    if(showFrames) {
+        cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
+    }
 }
 
 int ImageProcessor::processFrame(Mat frame)
@@ -69,21 +68,20 @@ int ImageProcessor::processFrame(Mat frame)
         // Use old-style OpenCV IplImage required by cvBlob
         IplImage filtered_img = fgimg;
 
-
         if (labelImg == NULL) {
             CvSize imgSize;
             imgSize.width = frame.cols;
             imgSize.height = frame.rows;
             labelImg = cvCreateImage(imgSize, IPL_DEPTH_LABEL, 1);
-#if SHOW_FRAMES
-            dstImg = cvCreateImage(imgSize, IPL_DEPTH_8U, 3);
-#endif
+            if (showFrames) {
+                dstImg = cvCreateImage(imgSize, IPL_DEPTH_8U, 3);
+            }
         } else {
             // Clear past img data
-            cvSet(labelImg, cvScalar(0));
-#if SHOW_FRAMES
-            cvSet(dstImg, cvScalar(0,0,0));
-#endif
+            cvZero(labelImg);
+            if (showFrames) {
+                cvZero(dstImg);
+            }
         }
 
         // Run blob-detection algorithm from cvBlob
@@ -102,18 +100,17 @@ int ImageProcessor::processFrame(Mat frame)
             }
         }
 
-#if SHOW_FRAMES
-        Mat bgImg;
-        bg_model.getBackgroundImage(bgImg);
+        if (showFrames) {
+            Mat bgImg;
+            bg_model.getBackgroundImage(bgImg);
 
-        cv::imshow("BG", bgImg);
-        cv::imshow("FGMASK", fgmask);
-        cv::imshow("FGIMG", fgimg);
+            cv::imshow("BG", bgImg);
+            cv::imshow("FGMASK", fgmask);
+            cv::imshow("FGIMG", fgimg);
 
-        cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
-        cvShowImage("dstImg", dstImg);
-#endif
-
+            cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
+            cvShowImage("dstImg", dstImg);
+        }
     } catch (cv::Exception& e) {
         printf("Caught Exception in ImageProcessor: %s\n", e.what());
     }
@@ -122,6 +119,11 @@ int ImageProcessor::processFrame(Mat frame)
 
 ImageProcessor::~ImageProcessor()
 {
-    cvReleaseImage(&labelImg);
-    cvReleaseImage(&dstImg);
+    if (labelImg) {
+        cvReleaseImage(&labelImg);
+    }
+
+    if (dstImg) {
+        cvReleaseImage(&dstImg);
+    }
 }

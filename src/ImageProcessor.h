@@ -35,7 +35,7 @@ using namespace cvb;
 class ImageProcessor {
 
 public:
-    ImageProcessor(CarCounter * c);
+    ImageProcessor(CarCounter * c, bool showFrames=true);
 
     void setROI(Rect r) {
         roi = r;
@@ -49,6 +49,7 @@ public:
 private:
     int frameCount;
     bool useROI;
+    bool showFrames;
     Rect roi;
     CarCounter * carCounter;
     IplImage * labelImg;

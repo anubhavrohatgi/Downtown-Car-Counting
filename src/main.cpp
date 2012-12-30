@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    cv::Rect roi(265, 230, 375, 250);
+    cv::Rect roi(265, 230, 375, 225);
     imageProc.setROI(roi);
 
     networkCamera.startProcessing();
