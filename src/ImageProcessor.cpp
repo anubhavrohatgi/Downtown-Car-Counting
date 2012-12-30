@@ -28,7 +28,8 @@ int ImageProcessor::processFrame(Mat frame)
             frame = frame(roi);
         }
 
-        cvtColor(frame, frame, CV_RGBA2RGB); // Convert to RGB required for background subtractor
+        // Convert to RGB required for background subtractor
+        cvtColor(frame, frame, CV_RGBA2RGB);
 
         // Slow down learning rate over time as we have enough images for a stable BG image
         double learningRate;
@@ -41,13 +42,15 @@ int ImageProcessor::processFrame(Mat frame)
         }
 
         Mat fgmask;
-        bg_model.operator()(frame,fgmask, learningRate); //(masked, fgmask); TODO: try setting learning rate very low so that objs don't get absorbed into BG
+        bg_model.operator()(frame,fgmask, learningRate);
 
+        // Just do BG model for the first few frames (no blob detection)
         if (frameCount < 10) {
-            // Just do BG model updating for the first few frames
             return 0;
         }
 
+        // Create a foreground image based on the foreground mask
+        // This is essentially subtracting the background
         Mat fgimg;
         frame.copyTo(fgimg, fgmask);
 
@@ -102,10 +105,12 @@ int ImageProcessor::processFrame(Mat frame)
 #if SHOW_FRAMES
         Mat bgImg;
         bg_model.getBackgroundImage(bgImg);
+
         cv::imshow("BG", bgImg);
         cv::imshow("FGMASK", fgmask);
         cv::imshow("FGIMG", fgimg);
-        cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg); // NOTE: if ROI is used, weird wrap around is seen in rendered dstImg
+
+        cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
         cvShowImage("dstImg", dstImg);
 #endif
 
