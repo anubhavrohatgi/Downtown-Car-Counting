@@ -26,7 +26,7 @@ void DataSourceManager::setCsvLogFile(const char * path)
 
 int DataSourceManager::processVideoFile(const char * path)
 {
-
+    getImageProcessor().processVideoFile(path);
 }
 
 int DataSourceManager::processCsvFile(const char * path)

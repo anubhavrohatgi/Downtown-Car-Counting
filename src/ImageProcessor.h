@@ -24,6 +24,8 @@ public:
         showFrames = d;
     }
 
+    void processVideoFile(const char * path);
+
     ~ImageProcessor();
 
 private:

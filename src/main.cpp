@@ -31,6 +31,25 @@ int write_to_file(char const *fileName, char * line)
     return 0;
 }
 
+void printUsage(const char * name) {
+    printf("usage: %s [...]\n" \
+            "\nData Sources:\n"\
+            "   -i <input_csv>\n"\
+            "   -c <libvcl_connection_string> # EXAMPLE: -c http://192.168.1.28/axis-cgi/mjpg/video.cgi?fps=10&nbrofframes=0\n" \
+            "   -v <video_path>\n" \
+            "\nOutput\n" \
+            "   -o <output_csv_log> \n" \
+            "   -d # specifies if frames should be displayed while processing (valid with -c, -v)\n" \
+            "\nMisc\n"
+            "   -w <media_width> # must be specified if using -c \n" \
+            "   -h <media_height> # must be specified if using -c \n" \
+            "\nCropping # Optional, valid with -c and -v options\n" \
+            "   -x <crop_x>\n" \
+            "   -y <crop_y>\n" \
+            "   -l <crop_length>\n" \
+            "   -t <crop_height>\n", name);
+}
+
 int main(int argc, char* argv[]) {
 
     // Parse Cmd Line Args
@@ -50,7 +69,7 @@ int main(int argc, char* argv[]) {
     bool displayFrames = false;
     int fps = 0;
 // TODO: add fps parameter, w, h params
-    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dx:y:l:t:w:h:")) != -1) {
+    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dx:y:l:t:w:h:?")) != -1) {
         switch (c)
         {
         // Data Sources
@@ -90,13 +109,18 @@ int main(int argc, char* argv[]) {
             case 'd':
                 displayFrames = true;
                 break;
+            case '?':
+                printUsage(argv[0]);
             default:
-                abort();
+                return 1;
         }
     }
 
     // Filter out invalid combinations
-    if (dataSources > 1) {
+    if (argc == 1) {
+        printUsage(argv[0]);
+        return 1;
+    } else if (dataSources > 1) {
         printf("Error: Multiple Data Sources Selected\n");
         return 1;
     } else if (dataSources == 0) {

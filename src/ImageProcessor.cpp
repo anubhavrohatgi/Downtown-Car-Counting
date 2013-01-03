@@ -14,6 +14,21 @@ ImageProcessor::ImageProcessor(CarCounter * c) :
 
 }
 
+void ImageProcessor::processVideoFile(const char * path)
+{
+    VideoCapture video(path); // open the default camera
+    if(!video.isOpened()) { // check if we succeeded
+        printf("Couldn't open video %s\n", path);
+        return;
+    }
+
+    while (true) {
+        Mat frame;
+        video >> frame;
+        processFrame(frame);
+    }
+}
+
 int ImageProcessor::processFrame(Mat frame)
 {
     CvBlobs cvBlobs;
