@@ -5,28 +5,23 @@ using namespace std;
 
 DataSourceManager::DataSourceManager() :
     logToCsv(false),
-    useImgMask(false),
     csvLogFile(NULL),
-    imgMaskFile(NULL)
+    imgProcessor(NULL),
+    networkCamera(NULL)
 {
 
 }
 
 DataSourceManager::~DataSourceManager()
 {
-
+    delete imgProcessor;
+    delete networkCamera;
 }
 
 void DataSourceManager::setCsvLogFile(const char * path)
 {
     logToCsv = true;
     csvLogFile = path;
-}
-
-void DataSourceManager::setImgMask(const char * path)
-{
-    useImgMask = true;
-    imgMaskFile = path;
 }
 
 int DataSourceManager::processVideoFile(const char * path)
@@ -93,7 +88,10 @@ int DataSourceManager::processCsvFile(const char * path)
     return counter.getCarCount();
 }
 
-int DataSourceManager::processIpCamera(const char * ip)
+int DataSourceManager::processIpCamera(const char * connectionString, int mediaWidth, int mediaHeight)
 {
-
+    if (!networkCamera) {
+        networkCamera = new NetworkStream(connectionString, &getImageProcessor(), mediaHeight, mediaHeight);
+    }
+    networkCamera->startProcessing();
 }

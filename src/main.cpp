@@ -1,9 +1,7 @@
 #include <sys/time.h>
 
-#include "CarCounter.h"
 #include "DataSourceManager.h"
 #include "ImageProcessor.h"
-#include "NetworkStream.h"
 
 // Hack to measure how long certain operations take (in ms and us)
 // Call profileStart() followed by profileEnd() and it'll print the diff of those call times
@@ -33,28 +31,29 @@ int write_to_file(char const *fileName, char * line)
     return 0;
 }
 
-// Testing ...
-ImageProcessor imageProc(NULL);
-NetworkStream networkCamera("http://192.168.1.28/axis-cgi/mjpg/video.cgi?fps=10&nbrofframes=0", &imageProc, 640, 480);
-
-
 int main(int argc, char* argv[]) {
 
     // Parse Cmd Line Args
     char * csvData = NULL;
     char * ipCamera = NULL;
     char * videoFile = NULL;
-    char * imgMask = NULL;
     char * csvLogFile = NULL;
+
+    // Media dimensions
+    int w=0, h=0;
+
+    // Optional cropping values
+    int x=0, y=0, l=0, t=0;
 
     int c;
     int dataSources = 0;
-    bool displayFrame = false;
+    bool displayFrames = false;
     int fps = 0;
 // TODO: add fps parameter, w, h params
-    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dh")) != -1) {
+    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dx:y:l:t:w:h:")) != -1) {
         switch (c)
         {
+        // Data Sources
             case 'i':
                 csvData = optarg;
                 dataSources++;
@@ -67,25 +66,47 @@ int main(int argc, char* argv[]) {
                 videoFile = optarg;
                 dataSources++;
                 break;
-            case 'm':
-                imgMask = optarg;
+            case 'w':
                 break;
+            case 'h':
+                break;
+        // Cropping
+            case 'x':
+                x = atoi(optarg);
+                break;
+            case 'y':
+                y = atoi(optarg);
+                break;
+            case 'l':
+                w = atoi(optarg);
+                break;
+            case 't':
+                h = atoi(optarg);
+                break;
+        // Outputs
             case 'o':
                 csvLogFile = optarg;
                 break;
             case 'd':
-                displayFrame = true;
+                displayFrames = true;
                 break;
-            case 'h':
-                // TODO: print usage
-                return 1;
             default:
                 abort();
         }
     }
 
+    // Filter out invalid combinations
     if (dataSources > 1) {
         printf("Error: Multiple Data Sources Selected\n");
+        return 1;
+    } else if (dataSources == 0) {
+        printf("Error: No Data Sources Selected\n");
+        return 1;
+    } else if (csvData && (displayFrames || w || h)) {
+        printf("Invalid option specified.\n");
+        return 1;
+    } else if (ipCamera && (!w || !h)) {
+        printf("Must specify media dimensions -w, -h.\n");
         return 1;
     }
 
@@ -94,24 +115,19 @@ int main(int argc, char* argv[]) {
     // Configure Manager
     if (csvLogFile) {
         manager.setCsvLogFile(csvLogFile);
+    } else if (w && h) {
+        manager.getImageProcessor().setCrop(x, y, l, t);
     }
 
-    if (imgMask) {
-        manager.setImgMask(imgMask);
-    }
-#if 0
     // Process Data or Stream from Camera
     if (csvData) {
         manager.processCsvFile(csvData);
-    } else if (ipCamera) {
-        manager.processIpCamera(ipCamera);
-    } else if (videoFile) {
-        manager.processVideoFile(videoFile);
+    } else {
+        manager.getImageProcessor().setShowFrames(displayFrames);
+        if (ipCamera) {
+            manager.processIpCamera(ipCamera, w, h);
+        } else if (videoFile) {
+            manager.processVideoFile(videoFile);
+        }
     }
-#endif
-
-    cv::Rect roi(265, 230, 375, 225);
-    imageProc.setROI(roi);
-
-    networkCamera.startProcessing();
 }

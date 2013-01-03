@@ -3,7 +3,7 @@
 using namespace cv;
 using namespace std;
 
-ImageProcessor::ImageProcessor(CarCounter * c, bool showFrames) :
+ImageProcessor::ImageProcessor(CarCounter * c) :
     frameCount(0),
     useROI(false),
     carCounter(c),
@@ -11,9 +11,7 @@ ImageProcessor::ImageProcessor(CarCounter * c, bool showFrames) :
     labelImg(NULL),
     dstImg(NULL)
 {
-    if(showFrames) {
-        cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
-    }
+
 }
 
 int ImageProcessor::processFrame(Mat frame)
@@ -101,6 +99,9 @@ int ImageProcessor::processFrame(Mat frame)
         }
 
         if (showFrames) {
+            if (frameCount == 1) {
+                cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
+            }
             Mat bgImg;
             bg_model.getBackgroundImage(bgImg);
 

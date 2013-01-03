@@ -10,14 +10,19 @@
 class ImageProcessor {
 
 public:
-    ImageProcessor(CarCounter * c, bool showFrames=true);
+    ImageProcessor(CarCounter * c);
 
-    void setROI(cv::Rect r) {
-        roi = r;
+    void setCrop(int x, int y, int w, int h) {
+        roi = cv::Rect(x, y, w, h);
         useROI = true;
     }
 
     int processFrame(cv::Mat frame);
+
+    // Can only be set before processing begins
+    void setShowFrames(bool d) {
+        showFrames = d;
+    }
 
     ~ImageProcessor();
 
