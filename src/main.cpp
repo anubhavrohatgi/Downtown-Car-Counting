@@ -40,14 +40,16 @@ void printUsage(const char * name) {
             "\nOutput\n" \
             "   -o <output_csv_log> \n" \
             "   -d # specifies if frames should be displayed while processing (valid with -c, -v)\n" \
-            "\nMisc\n"
-            "   -w <media_width> # must be specified if using -c \n" \
-            "   -h <media_height> # must be specified if using -c \n" \
-            "\nCropping # Optional, valid with -c and -v options\n" \
+            "\nCropping (Optional, valid with -c and -v options)\n" \
             "   -x <crop_x>\n" \
             "   -y <crop_y>\n" \
             "   -l <crop_length>\n" \
-            "   -t <crop_height>\n", name);
+            "   -t <crop_height>\n" \
+            "\nMisc\n"
+            "   -w <media_width> # must be specified if using -c \n" \
+            "   -h <media_height> # must be specified if using -c \n" \
+            "   -? # Usage Statement\n" \
+            , name);
 }
 
 int main(int argc, char* argv[]) {
@@ -86,8 +88,10 @@ int main(int argc, char* argv[]) {
                 dataSources++;
                 break;
             case 'w':
+                w = atoi(optarg);
                 break;
             case 'h':
+                h = atoi(optarg);
                 break;
         // Cropping
             case 'x':
@@ -147,6 +151,7 @@ int main(int argc, char* argv[]) {
     if (csvData) {
         manager.processCsvFile(csvData);
     } else {
+        printf("Setting Frames to be Displayed: %d\n", displayFrames);
         manager.getImageProcessor().setShowFrames(displayFrames);
         if (ipCamera) {
             manager.processIpCamera(ipCamera, w, h);

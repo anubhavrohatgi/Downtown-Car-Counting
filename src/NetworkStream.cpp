@@ -38,9 +38,6 @@ NetworkStream::NetworkStream(const char * networkStream, ImageProcessor * imgPro
     libVlcInstance(NULL),
     mediaPlayer(NULL)
 {
-    // FIXME: hack
-    imProc = imgProc;
-
     const char * const vlc_args[] = {
     "--no-media-library",
     "--reset-plugins-cache",
@@ -48,7 +45,7 @@ NetworkStream::NetworkStream(const char * networkStream, ImageProcessor * imgPro
     "--no-osd",
     "--no-video-title-show",
     "--plugin-path=/usr/local/lib/"};
-
+    printf("Starting Network Stream: %dx%d\n", mediaWidth, mediaHeight);
     libVlcInstance = libvlc_new(6,vlc_args);
 
     libvlc_media_t * media = libvlc_media_new_path(libVlcInstance, networkStream);

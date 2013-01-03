@@ -26,6 +26,7 @@ void ImageProcessor::processVideoFile(const char * path)
         Mat frame;
         video >> frame;
         processFrame(frame);
+        // TODO: make app escape using ESC key
     }
 }
 

@@ -91,7 +91,7 @@ int DataSourceManager::processCsvFile(const char * path)
 int DataSourceManager::processIpCamera(const char * connectionString, int mediaWidth, int mediaHeight)
 {
     if (!networkCamera) {
-        networkCamera = new NetworkStream(connectionString, &getImageProcessor(), mediaHeight, mediaHeight);
+        networkCamera = new NetworkStream(connectionString, &getImageProcessor(), mediaWidth, mediaHeight);
     }
     networkCamera->startProcessing();
 }
