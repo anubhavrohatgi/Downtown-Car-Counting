@@ -28,16 +28,21 @@ static void unlock(void *data, void *id, void *const *p_pixels){
     cv::Mat frame(ctx->image, false);// = Mat(orig, true);
     if (imProc) {
         imProc->processFrame(frame);
+    } else {
+        printf("No IMG proc\n");
     }
     //processFrame(ctx->image);
-    cvShowImage("test", ctx->image);
+    //cvShowImage("test", ctx->image);
 }
 
-NetworkStream::NetworkStream(const char * networkStream, ImageProcessor * imgProc, int mediaWidth, int mediaHeight) :
-    imageProcessor(imgProc),
+NetworkStream::NetworkStream(const char * networkStream, ImageProcessor * proc, int mediaWidth, int mediaHeight) :
+    imageProcessor(proc),
     libVlcInstance(NULL),
     mediaPlayer(NULL)
 {
+    // Hack since callback functions require static instance.
+    imProc = imageProcessor;
+
     const char * const vlc_args[] = {
     "--no-media-library",
     "--reset-plugins-cache",

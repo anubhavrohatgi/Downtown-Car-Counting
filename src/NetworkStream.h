@@ -13,11 +13,6 @@ public:
     // Does not return
     void startProcessing();
 
-    ImageProcessor * getImageProcessor()
-    {
-        return imageProcessor;
-    }
-
     ~NetworkStream();
 
 private:

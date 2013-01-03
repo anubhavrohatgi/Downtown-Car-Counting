@@ -101,10 +101,10 @@ int main(int argc, char* argv[]) {
                 y = atoi(optarg);
                 break;
             case 'l':
-                w = atoi(optarg);
+                l = atoi(optarg);
                 break;
             case 't':
-                h = atoi(optarg);
+                t = atoi(optarg);
                 break;
         // Outputs
             case 'o':

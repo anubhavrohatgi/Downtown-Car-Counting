@@ -7,11 +7,17 @@ ImageProcessor::ImageProcessor(CarCounter * c) :
     frameCount(0),
     useROI(false),
     carCounter(c),
-    showFrames(showFrames),
     labelImg(NULL),
     dstImg(NULL)
 {
 
+}
+
+void ImageProcessor::setShowFrames(bool d) {
+    showFrames = d;
+    if (showFrames) {
+        cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
+    }
 }
 
 void ImageProcessor::processVideoFile(const char * path)
@@ -22,27 +28,43 @@ void ImageProcessor::processVideoFile(const char * path)
         return;
     }
 
-    while (true) {
+    int numFrames = video.get(CV_CAP_PROP_FRAME_COUNT);
+    int fps = video.get(CV_CAP_PROP_FPS);
+    int videoLength = numFrames / fps;
+    int framesProcessed = 0;
+
+    printf("Video: %s\nStats: %d frames, %d fps, len %ds\n", path, numFrames, fps, videoLength);
+
+    while (framesProcessed < numFrames) {
         Mat frame;
         video >> frame;
         processFrame(frame);
+        framesProcessed++;
+        if(waitKey(1) >= 0) break;
         // TODO: make app escape using ESC key
     }
 }
 
-int ImageProcessor::processFrame(Mat frame)
+int ImageProcessor::processFrame(Mat inFrame)
 {
     CvBlobs cvBlobs;
     frameCount++;
 
     try {
-
+        Mat frame;
         if (useROI) {
-            frame = frame(roi);
+            frame = inFrame(roi);
+        } else {
+            frame = inFrame;
         }
 
         // Convert to RGB required for background subtractor
-        cvtColor(frame, frame, CV_RGBA2RGB);
+        try {
+            cvtColor(frame, frame, CV_RGBA2RGB);
+        } catch (cv::Exception& e) {
+            printf("Caught Exception in cvtColor(frame, frame, CV_RGBA2RGB): %s\n", e.what());
+            return 0;
+        }
 
         // Slow down learning rate over time as we have enough images for a stable BG image
         double learningRate;
@@ -55,17 +77,26 @@ int ImageProcessor::processFrame(Mat frame)
         }
 
         Mat fgmask;
-        bg_model.operator()(frame,fgmask, learningRate);
-
-        // Just do BG model for the first few frames (no blob detection)
-        if (frameCount < 10) {
-            return 0;
-        }
+        bg_model.operator()(frame, fgmask, learningRate);
 
         // Create a foreground image based on the foreground mask
         // This is essentially subtracting the background
         Mat fgimg;
         frame.copyTo(fgimg, fgmask);
+
+        if (showFrames) {
+            Mat bgImg;
+            bg_model.getBackgroundImage(bgImg);
+            cv::imshow("INPUT", inFrame);
+            cv::imshow("BG", bgImg);
+            cv::imshow("FGMASK", fgmask);
+            cv::imshow("FGIMG", fgimg);
+        }
+
+        // Just do BG model for the first few frames (no blob detection)
+        if (frameCount < 10) {
+            return 0;
+        }
 
 // Help with quality of data?
 //cv::erode(fgimg,fgimg,cv::Mat());
@@ -74,7 +105,12 @@ int ImageProcessor::processFrame(Mat frame)
 //cv::imshow("ERODED", fgimg);
 
         // Convert to grayscale, required by cvBlob
-        cvtColor(fgimg, fgimg, CV_RGB2GRAY);
+        try {
+            cvtColor(fgimg, fgimg, CV_RGB2GRAY);
+        } catch (cv::Exception& e) {
+            printf("Caught Exception in cvtColor(fgimg, fgimg, CV_RGB2GRAY): %s\n", e.what());
+            //return 0;
+        }
 
         //threshold(fgimg, fgimg, 100, 255, 3);
         //fgimg = GetThresholdedImage(fgimg);
@@ -115,16 +151,6 @@ int ImageProcessor::processFrame(Mat frame)
         }
 
         if (showFrames) {
-            if (frameCount == 1) {
-                cvNamedWindow("display", CV_WINDOW_AUTOSIZE);
-            }
-            Mat bgImg;
-            bg_model.getBackgroundImage(bgImg);
-
-            cv::imshow("BG", bgImg);
-            cv::imshow("FGMASK", fgmask);
-            cv::imshow("FGIMG", fgimg);
-
             cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
             cvShowImage("dstImg", dstImg);
         }

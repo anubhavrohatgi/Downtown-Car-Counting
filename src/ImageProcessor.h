@@ -20,9 +20,7 @@ public:
     int processFrame(cv::Mat frame);
 
     // Can only be set before processing begins
-    void setShowFrames(bool d) {
-        showFrames = d;
-    }
+    void setShowFrames(bool d);
 
     void processVideoFile(const char * path);
 
