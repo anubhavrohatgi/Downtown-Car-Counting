@@ -4,8 +4,6 @@
 using namespace std;
 
 DataSourceManager::DataSourceManager() :
-    logToCsv(false),
-    csvLogFile(NULL),
     imgProcessor(NULL),
     networkCamera(NULL)
 {
@@ -20,8 +18,7 @@ DataSourceManager::~DataSourceManager()
 
 void DataSourceManager::setCsvLogFile(const char * path)
 {
-    logToCsv = true;
-    csvLogFile = path;
+    counter.setOutputLogFile(path);
 }
 
 int DataSourceManager::processVideoFile(const char * path)

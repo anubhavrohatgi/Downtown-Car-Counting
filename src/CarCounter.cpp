@@ -2,51 +2,24 @@
 
 using namespace std;
 
-//#include <limit>
-
-FILE *f = NULL;
-
-int write_to_file_overwrite(char const *fileName, char * line)
-{
-    //printf("To File: %s", line);
-    if (!f) {
-        f = fopen(fileName, "w");
-    }
-    if (f == NULL) return -1;
-    // you might want to check for out-of-disk-space here, too
-    fprintf(f, "%s", line);
-//    fclose(f);
-    return 0;
-}
-
 CarCounter::CarCounter() :
     carCount(0),
     bikeCount(0),
     streetcarCount(0),
     rosCreated(0),
-    frameNumber(0)
+    frameNumber(0),
+    logFile(NULL),
+    logFilePath(NULL),
+    writesToLog(0)
 {
 
 }
 
 CarCounter::~CarCounter()
 {
-    char buf[120];
-    //printf("PRINTING ALL BLOBS ...\n");
-    for (int i = 0; i < allBlobs.size(); i++) {
-        unsigned int frameNum = allBlobs.at(i).frameNum; // HACK, stored the frameNumber in the blob data
-        if (i == 0) {
-            for (int j = 1; j < 8; j++) {
-                // Create legend
-                sprintf(buf, "%d,%f,%f,%d,%d\n", frameNum, allBlobs.at(i).x + 35 * j, allBlobs.at(i).y, 4000, j);
-                write_to_file_overwrite("/Users/j3bennet/dev.csv", buf);
-                //printf("%s", buf);
-            }
-        }
-        sprintf(buf, "%d,%f,%f,%d,%d\n", frameNum, allBlobs.at(i).x, allBlobs.at(i).y, (int)allBlobs.at(i).area, allBlobs.at(i).getClusterId());
-        write_to_file_overwrite("/Users/j3bennet/dev.csv",buf);
-        //printf("%s", buf);
-    }
+    // Log all remaining blobs
+    blobsToLogAndRemove(allBlobs.size());
+    fclose(logFile);
 }
 
 int CarCounter::updateStats(vector<Blob>& blobs)
@@ -181,5 +154,51 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
             }
         }
     }
+
+    // Log old blobs to file
+    if (allBlobs.size() > 500) {
+        blobsToLogAndRemove(300);
+    }
     return newROs;
+}
+
+void CarCounter::blobsToLogAndRemove(int numBlobs)
+{
+    if (allBlobs.size() < numBlobs) {
+        numBlobs = allBlobs.size();
+    }
+
+    char buf[120];
+
+    if (writesToLog == 0) {
+        // Create header and legend
+        sprintf(buf, "time,x,y,size,id\n"); // TODO: beef up logging
+        for (int j = 1; j < 8; j++) {
+            sprintf(buf, "%d,%f,%f,%d,%d\n", allBlobs.front().frameNum, allBlobs.front().x + 35 * j, allBlobs.front().y, 4000, j);
+            writeToLog(buf);
+        }
+    }
+
+    for (int i = 0; i < numBlobs; i++) {
+        Blob b = allBlobs.front();
+        allBlobs.pop_front();
+        unsigned int frameNum = b.frameNum;
+        sprintf(buf, "%d,%f,%f,%d,%d\n", frameNum, b.x, b.y, (int)b.area, b.getClusterId());
+        writeToLog(buf);
+    }
+}
+
+int CarCounter::writeToLog(const char * line)
+{
+    writesToLog++;
+    if (!logFile && logFilePath) {
+        logFile = fopen(logFilePath, "w");
+    }
+    if (!logFilePath) {
+        printf("No Log File: %s\n", line);
+        return -1;
+    } else {
+        fprintf(logFile, "%s", line);
+    }
+    return 0;
 }

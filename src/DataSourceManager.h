@@ -12,7 +12,6 @@ public:
     ~DataSourceManager();
 
     void setCsvLogFile(const char * path);
-    void setImgMask(const char * path);
 
     int processVideoFile(const char * path);
 
@@ -34,9 +33,6 @@ private:
 
     ImageProcessor * imgProcessor;
     NetworkStream  * networkCamera;
-
-    bool logToCsv;
-    const char * csvLogFile;
 };
 
 #endif

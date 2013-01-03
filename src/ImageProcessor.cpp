@@ -148,6 +148,7 @@ int ImageProcessor::processFrame(Mat inFrame)
                     Blob * b = new Blob(blob, frameCount);
                     blobs.push_back(*b);
             }
+            carCounter->updateStats(blobs);
         }
 
         if (showFrames) {

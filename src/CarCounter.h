@@ -9,6 +9,10 @@ class CarCounter {
 public:
     CarCounter();
 
+    void setOutputLogFile(const char * path) {
+        logFilePath = path;
+    }
+
     ~CarCounter();
 
     int getCarCount() {
@@ -18,8 +22,7 @@ public:
     double getAvgSpeed(int numFrames);
 
     int updateStats(std::vector<Blob>& blobs);
-    int updateStats(std::vector<Blob>& blobs, int frameNum);
-
+    int updateStats(std::vector<Blob>& blobs, int frameNum); //TODO: use timestamps instead?
 
 private:
     double distanceThreshold;
@@ -35,11 +38,19 @@ private:
     std::list<ObjectIdentifier> objects;
     std::list<Blob> unidentifiedBlobs;
 
-    std::vector<Blob> allBlobs;
+    std::list<Blob> allBlobs;
 
     int rosCreated;
 
     int frameNumber;
+
+    // Logging
+    int writeToLog(const char * line);
+    // Also deletes blobs after logging them
+    void blobsToLogAndRemove(int numBlobs);
+    FILE * logFile;
+    const char * logFilePath;
+    int writesToLog;
 
     const static int MIN_NUM_POINTS = 7;
     const static int MIN_FRAME_TIMEOUT = 5 * 10; // 10 seconds at 5 fps
