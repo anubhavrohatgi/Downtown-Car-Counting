@@ -13,6 +13,8 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
     id(1 + (globalID++ % 8)),
     closestDistToOrigin(0),
     furthestDistToOrigin(0),
+    closestBlob(b),
+    furthestBlob(b),
     numBlobs(0)
 {
     addBlob(b);

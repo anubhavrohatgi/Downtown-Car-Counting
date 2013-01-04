@@ -47,6 +47,7 @@ void ImageProcessor::processVideoFile(const char * path)
         video >> frame;
         processFrame(frame);
         framesProcessed++;
+        printf("%d / %d  %f%\n", framesProcessed, numFrames, (double)(framesProcessed / numFrames));
         if(waitKey(1) >= 0) break;
         // TODO: make app escape using ESC key
     }

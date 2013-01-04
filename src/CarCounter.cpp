@@ -24,7 +24,7 @@ CarCounter::~CarCounter()
 
 int CarCounter::updateStats(vector<Blob>& blobs)
 {
-    updateStats(blobs, frameNumber++);
+    updateStats(blobs, ++frameNumber);
 }
 
 int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
@@ -37,7 +37,7 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
     for (int i = 0; i < blobs.size(); i++) {
 
         Blob blob = blobs.at(i);
-        blob.frameNum = frameNum; // Hack to store the frame number in the blob data
+        blob.frameNum = frameNumber; // Hack to store the frame number in the blob data
 
         ObjectIdentifier * bestFit = NULL;
         ObjectIdentifier * candidateFit = NULL; // Used if an identified blob is on the edge of our parameters
@@ -172,9 +172,10 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
 
     if (writesToLog == 0) {
         // Create header and legend
-        sprintf(buf, "time,x,y,size,id\n"); // TODO: beef up logging
+        writeToLog("time,x,y,size,id\n"); // TODO: beef up logging
         for (int j = 1; j < 8; j++) {
-            sprintf(buf, "%d,%f,%f,%d,%d\n", allBlobs.front().frameNum, allBlobs.front().x + 35 * j, allBlobs.front().y, 4000, j);
+            Blob b = allBlobs.front();
+            sprintf(buf, "%d,%f,%f,%d,%d\n", b.frameNum, b.x + 35 * j, b.y, 4000, j);
             writeToLog(buf);
         }
     }

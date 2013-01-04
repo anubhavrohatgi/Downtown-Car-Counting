@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
         manager.setCsvLogFile(csvLogFile);
     }
 
-    if (w && h) {
+    if (l && t) {
         manager.getImageProcessor().setCrop(x, y, l, t);
     }
 
