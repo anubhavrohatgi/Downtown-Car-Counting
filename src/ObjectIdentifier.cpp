@@ -236,7 +236,7 @@ bool ObjectIdentifier::inStartingZone(Blob b)
 {   // Crop values: -x 265 -y 230 -l 375 -t 225
     double x = b.x;
     double y = b.y;
-    return (x > (275 - 265) && x < (350 - 265) && y > (300 - 230) && y < (375 - 230));
+    return ((y >= 75 && y <= 100) && ((x >= 0 && x <= 50) || (x >= 290 && x <= 340)));
 }
 
 bool ObjectIdentifier::inEndZone()

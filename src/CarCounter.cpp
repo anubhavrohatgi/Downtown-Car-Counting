@@ -174,7 +174,7 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
 
     if (writesToLog == 0) {
         // Create header and legend
-        writeToLog("time,x,y,size,id\n"); // TODO: beef up logging
+        writeToLog("time,x,y,area,id\n"); // TODO: beef up logging
         for (int j = 1; j < 8; j++) {
             Blob b = allBlobs.front();
             sprintf(buf, "%d,%f,%f,%d,%d\n", b.frameNum, b.x + 35 * j, b.y, 4000, j);
