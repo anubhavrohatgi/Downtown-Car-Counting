@@ -2,6 +2,7 @@
 #define _OBJECT_IDENTIFIER_H_
 
 #include "Blob.h"
+#include <vector>
 
 static int globalID = 1;
 

@@ -1,7 +1,9 @@
 #include "ImageProcessor.h"
+#include "cvblob.h"
 #include <sys/time.h>
 
 using namespace cv;
+using namespace cvb;
 using namespace std;
 
 ImageProcessor::ImageProcessor(CarCounter * c) :
@@ -159,8 +161,8 @@ int ImageProcessor::processFrame(Mat inFrame)
             vector<Blob> blobs;
             for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
                     CvBlob blob = *(it->second);
-                    Blob * b = new Blob(blob, frameCount);
-                    blobs.push_back(*b);
+                    Blob b(blob.centroid.x, blob.centroid.y, blob.area, frameCount);
+                    blobs.push_back(b);
             }
             carCounter->updateStats(blobs);
         }

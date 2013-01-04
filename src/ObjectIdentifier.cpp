@@ -1,6 +1,7 @@
 #include "ObjectIdentifier.h"
 
 #include <limits>
+#include <cmath>
 
 using namespace std;
 
@@ -11,7 +12,7 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
     lastSeen(0),
     frameCount(0),
     id(1 + (globalID++ % 8)),
-    closestDistToOrigin(0),
+    closestDistToOrigin(999999), // TODO: maxint
     furthestDistToOrigin(0),
     closestBlob(b),
     furthestBlob(b),
@@ -60,19 +61,6 @@ double ObjectIdentifier::getSpeed()
 bool ObjectIdentifier::addBlob(Blob b)
 {
     numBlobs++;
-
-    if (distanceFromLastBlob(b) < 15 && false) {
-        // If very close, just treat as a single point
-        int avgd = ++blobs.at(blobs.size() - 1).blobsAvgd;
-        printf("AVGD %d\n", avgd);
-        double x = (1/avgd) * b.x + ((avgd - 1) / avgd) * blobs.at(blobs.size() - 1).x;
-        double y = (1/avgd) * b.y + ((avgd - 1) / avgd) * blobs.at(blobs.size() - 1).y;
-        double area = (1/avgd) * b.area + ((avgd - 1) / avgd) * blobs.at(blobs.size() - 1).area;
-        blobs.at(blobs.size() - 1).x = x;
-        blobs.at(blobs.size() - 1).y = y;
-        blobs.at(blobs.size() - 1).area = area;
-    } else {
-    }
     lastBlob = b;
     blobs.push_back(b);
 
@@ -245,10 +233,10 @@ bool ObjectIdentifier::inRange(Blob b)
 }
 
 bool ObjectIdentifier::inStartingZone(Blob b)
-{
+{   // Crop values: -x 265 -y 230 -l 375 -t 225
     double x = b.x;
     double y = b.y;
-    return (x > 275 && x < 350 && y > 300 && y < 375);
+    return (x > (275 - 265) && x < (350 - 265) && y > (300 - 230) && y < (375 - 230));
 }
 
 bool ObjectIdentifier::inEndZone()

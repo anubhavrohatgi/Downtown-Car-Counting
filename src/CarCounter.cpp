@@ -168,6 +168,8 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
         numBlobs = allBlobs.size();
     }
 
+    if (numBlobs == 0) return;
+
     char buf[120];
 
     if (writesToLog == 0) {
@@ -191,15 +193,12 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
 
 int CarCounter::writeToLog(const char * line)
 {
+    if (!logFilePath) return -1;
+
     writesToLog++;
-    if (!logFile && logFilePath) {
+    if (!logFile) {
         logFile = fopen(logFilePath, "w");
     }
-    if (!logFilePath) {
-        printf("No Log File: %s\n", line);
-        return -1;
-    } else {
-        fprintf(logFile, "%s", line);
-    }
+    fprintf(logFile, "%s", line);
     return 0;
 }

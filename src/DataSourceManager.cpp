@@ -50,30 +50,32 @@ int DataSourceManager::processCsvFile(const char * path)
     // Map of blobs
     // We store them per frame so that they can be processed per frame like they would be if generated from a video
     vector<Blob> blobs;
-    int lastFrameNum = 0;
+    int lastFrameNum = -1;
 
     for (int i = 0; i < array.size(); i++)
     {
         if (array[i].size() >= 4) { // Expect at least 4 columns
             // Read Blob from row
-            int frameNum = atoi(array[i][0].c_str()) * 5;
+            int frameNum = atoi(array[i][0].c_str());
             double x = atof(array[i][1].c_str());
             double y = atof(array[i][2].c_str());
             double area = atoi(array[i][3].c_str());
-            Blob * b = new Blob(x, y, area, frameNum); // TODO: proper memory mgmt
-            if (i == 0) {
+            if (area != 4000) { // Hack, using area = 4000 as a legend when graphing in R
+                Blob b(x, y, area, frameNum); // TODO: proper memory mgmt
+                if (lastFrameNum == -1) {
+                    lastFrameNum = frameNum;
+                }
+
+                // New frame in the log file, process blobs stored for last frame
+                if (frameNum != lastFrameNum) {
+                    counter.updateStats(blobs, blobs.at(0).frameNum);
+                    blobs.clear();
+                }
+
+                // Store new blob
+                blobs.push_back(b);
                 lastFrameNum = frameNum;
             }
-
-            // New frame in the log file, process blobs stored for last frame
-            if (frameNum != lastFrameNum) {
-                counter.updateStats(blobs, blobs.at(0).frameNum);
-                blobs.clear();
-            }
-
-            // Store new blob
-            blobs.push_back(*b);
-            lastFrameNum = frameNum;
         }
     }
 
