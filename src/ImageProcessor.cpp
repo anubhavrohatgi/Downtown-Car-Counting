@@ -1,4 +1,5 @@
 #include "ImageProcessor.h"
+#include <sys/time.h>
 
 using namespace cv;
 using namespace std;
@@ -8,7 +9,13 @@ ImageProcessor::ImageProcessor(CarCounter * c) :
     useROI(false),
     carCounter(c),
     labelImg(NULL),
-    dstImg(NULL)
+    dstImg(NULL),
+    tmin(99999), // TODO: maxint
+    tmax(0),
+    tavg(0),
+    ttotal(0),
+    tfps(0),
+    lastStatsPrinted(1)
 {
 
 }
@@ -47,6 +54,12 @@ void ImageProcessor::processVideoFile(const char * path)
 
 int ImageProcessor::processFrame(Mat inFrame)
 {
+    // Profiling and Stats
+    long frameStart = getTime();
+    if (frameCount == 0) {
+        tStart = frameStart;
+    }
+
     CvBlobs cvBlobs;
     frameCount++;
 
@@ -158,7 +171,35 @@ int ImageProcessor::processFrame(Mat inFrame)
     } catch (cv::Exception& e) {
         printf("Caught Exception in ImageProcessor: %s\n", e.what());
     }
+
+    // Handle Stats
+    long frameEnd = getTime();
+    long processTime = frameEnd - frameStart;
+    tmin = (processTime < tmin) ? processTime : tmin;
+    tmax = (processTime > tmax) ? processTime : tmax;
+    ttotal += processTime;
+    tfps += processTime;
+    tavg = ttotal / frameCount;
+
+    // Print stats every 10 frames
+    if (frameCount % 10 == 0) {
+        double fps = (frameCount - lastStatsPrinted) * 1000 / tfps;
+        double global_fps = frameCount * 1000 / ttotal;
+        printf("min,max,avg   %ld,%ld,%ld\n", tmin,tmax,tavg);
+        printf("recent_fps,global_fps  %f,%f\n", fps, global_fps);
+        lastStatsPrinted = frameCount;
+        tfps = 0;
+    }
     return cvBlobs.size();
+}
+
+// Returns time in ms
+long ImageProcessor::getTime()
+{
+    timeval profile;
+    gettimeofday(&profile, NULL);
+    long time = (profile.tv_sec * 1000 * 1000) + (profile.tv_usec);
+    return time / 1000;
 }
 
 ImageProcessor::~ImageProcessor()

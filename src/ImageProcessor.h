@@ -15,6 +15,7 @@ public:
     void setCrop(int x, int y, int w, int h) {
         roi = cv::Rect(x, y, w, h);
         useROI = true;
+        printf("Setting Crop x=%d y=%d w=%d h=%d\n", x, y, w, h);
     }
 
     int processFrame(cv::Mat frame);
@@ -35,7 +36,15 @@ private:
     IplImage * labelImg;
     IplImage * dstImg;
 
+    // Returns time in ms
+    long getTime();
+
     cv::BackgroundSubtractorMOG2 bg_model;
+
+    // Stats
+    long tStart;
+    long tmin, tmax, tavg, ttotal, tfps;
+    int lastStatsPrinted;
 };
 
 #endif

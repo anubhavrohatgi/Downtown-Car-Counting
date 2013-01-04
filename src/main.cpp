@@ -1,35 +1,5 @@
-#include <sys/time.h>
-
 #include "DataSourceManager.h"
 #include "ImageProcessor.h"
-
-// Hack to measure how long certain operations take (in ms and us)
-// Call profileStart() followed by profileEnd() and it'll print the diff of those call times
-timeval profile;
-long profile_start, profile_end;
-void init();
-void profileStart() {
-    gettimeofday(&profile, NULL);
-    profile_start = (profile.tv_sec * 1000 * 1000) + (profile.tv_usec);
-}
-
-void profileEnd() {
-    gettimeofday(&profile, NULL);
-    profile_end = (profile.tv_sec * 1000 * 1000) + (profile.tv_usec);
-    printf("Profile: %d us %d ms\n", profile_end - profile_start,
-            (profile_end - profile_start) / 1000);
-}
-
-int write_to_file(char const *fileName, char * line)
-{
-    //printf("To File: %s", line);
-    FILE *f = fopen(fileName, "a");
-    if (f == NULL) return -1;
-    // you might want to check for out-of-disk-space here, too
-    fprintf(f, "%s", line);
-    fclose(f);
-    return 0;
-}
 
 void printUsage(const char * name) {
     printf("usage: %s [...]\n" \
@@ -53,7 +23,6 @@ void printUsage(const char * name) {
 }
 
 int main(int argc, char* argv[]) {
-
     // Parse Cmd Line Args
     char * csvData = NULL;
     char * ipCamera = NULL;
@@ -70,7 +39,7 @@ int main(int argc, char* argv[]) {
     int dataSources = 0;
     bool displayFrames = false;
     int fps = 0;
-// TODO: add fps parameter, w, h params
+// TODO: add fps parameter,
     while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dx:y:l:t:w:h:?")) != -1) {
         switch (c)
         {
@@ -143,7 +112,9 @@ int main(int argc, char* argv[]) {
     // Configure Manager
     if (csvLogFile) {
         manager.setCsvLogFile(csvLogFile);
-    } else if (w && h) {
+    }
+
+    if (w && h) {
         manager.getImageProcessor().setCrop(x, y, l, t);
     }
 
