@@ -49,9 +49,8 @@ void ImageProcessor::processVideoFile(const char * path)
         video >> frame;
         processFrame(frame);
         framesProcessed++;
-        printf("%d / %d  %f%\n", framesProcessed, numFrames, (double)(framesProcessed / numFrames));
-        if(waitKey(1) >= 0) break;
-        // TODO: make app escape using ESC key
+        printf("%d / %d  %f pct\n", framesProcessed, numFrames, ((double)framesProcessed / (double)numFrames) * 100);
+        if (waitKey(1) >= 0) break;
     }
 }
 
@@ -156,7 +155,7 @@ int ImageProcessor::processFrame(Mat inFrame)
         // Filter out really small blobs
         cvFilterByArea(cvBlobs, 100, 20000);
 
-        printf("Blobs Size: %d\n", cvBlobs.size());
+        printf("Blobs Size: %d\n", (int)cvBlobs.size());
         if (carCounter) {
             vector<Blob> blobs;
             for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {

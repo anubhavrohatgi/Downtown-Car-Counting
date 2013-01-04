@@ -45,7 +45,7 @@ int DataSourceManager::processCsvFile(const char * path)
     }
 
     // SUGGEST: Could process lines as they're read in if dealing with huge data
-    printf("CSV Rows: %d\n", array.size());
+    printf("CSV Rows: %d\n", (int)array.size());
 
     // Map of blobs
     // We store them per frame so that they can be processed per frame like they would be if generated from a video

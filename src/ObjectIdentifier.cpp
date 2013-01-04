@@ -85,7 +85,7 @@ void ObjectIdentifier::printPoints()
 {
     for (int i = 0; i < blobs.size(); i++) {
         unsigned int frameNum = blobs.at(i).frameNum; // HACK, stored the frameNumber in the blob data
-        printf("%d,%f,%f,%d,%d\n", frameNum, blobs.at(i).x, blobs.at(i).y, blobs.at(i).area, id);
+        printf("%d,%f,%f,%d,%d\n", frameNum, blobs.at(i).x, blobs.at(i).y, (int)blobs.at(i).area, id);
     }
 }
 
