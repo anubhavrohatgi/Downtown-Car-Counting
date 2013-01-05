@@ -3,6 +3,7 @@
 
 #include "Blob.h"
 #include <vector>
+#include <opencv2/video/tracking.hpp>
 
 static int globalID = 1;
 
@@ -53,6 +54,8 @@ public:
     double distFromExpectedY(double y, int frameNum);
     double distFromExpectedX(double y, int frameNum);
 
+    double distFromPredicted(double x, double y);
+
     bool continuesTrend(Blob b);
 
     double rValues()
@@ -91,6 +94,10 @@ private:
 
     std::vector<Blob> blobs;
     int numBlobs;
+
+    // Experimental
+    cv::KalmanFilter & KF;//(4, 2, 0);
+    cv::Mat_<float> & measurement;//(2,1);
 };
 
 #endif

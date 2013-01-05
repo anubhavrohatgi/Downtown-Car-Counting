@@ -4,9 +4,7 @@
 #include <cmath>
 
 using namespace std;
-
-// Forward declaration
-pair<double,double> leastSqrRegression(vector<Blob> &blobs, int numPointsToUse);
+using namespace cv;
 
 ObjectIdentifier::ObjectIdentifier(Blob b) :
     lastSeen(0),
@@ -16,8 +14,27 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
     furthestDistToOrigin(0),
     closestBlob(b),
     furthestBlob(b),
-    numBlobs(0)
+    numBlobs(0),
+    KF(*(new KalmanFilter(4,2,0))),
+    measurement(*(new cv::Mat_<float>(2,1)))
 {
+
+    //KF = KF(4, 2, 0, CV_32F);
+    //measurement = measurement(2,1);
+
+    measurement.setTo(Scalar(0));
+    KF.statePre.at<float>(0) = b.x;
+    KF.statePre.at<float>(1) = b.y;
+    KF.statePre.at<float>(2) = 0;
+    KF.statePre.at<float>(3) = 0;
+    KF.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
+
+    setIdentity(KF.measurementMatrix);
+    setIdentity(KF.processNoiseCov, Scalar::all(1e-4));
+    setIdentity(KF.measurementNoiseCov, Scalar::all(1e-1));
+    setIdentity(KF.errorCovPost, Scalar::all(.1));
+
+
     addBlob(b);
 }
 
@@ -79,6 +96,16 @@ bool ObjectIdentifier::addBlob(Blob b)
         closestBlob = b;
         closestDistToOrigin = distanceToOrigin;
     }
+
+    Mat prediction = KF.predict();
+    Point predictPt(prediction.at<float>(0),prediction.at<float>(1));
+
+    measurement(0) = b.x;
+    measurement(1) = b.y;
+    // generate measurement
+    //measurement += KF.measurementMatrix*state;
+
+    Mat estimated = KF.correct(measurement);
 }
 
 void ObjectIdentifier::printPoints()
@@ -187,6 +214,14 @@ double ObjectIdentifier::distFromExpectedX(double x, int frameNum)
     double x_int = line.second;
     double x_exp = slope * frameNum + x_int;
     return abs(x - x_exp);
+}
+
+double ObjectIdentifier::distFromPredicted(double x, double y)
+{
+    // First predict, to update the internal statePre variable
+    Mat prediction = KF.predict();
+    Point predictPt(prediction.at<float>(0),prediction.at<float>(1));
+    return distance(x, y, predictPt.x, predictPt.y);
 }
 
 Blob ObjectIdentifier::getLastBlob()
