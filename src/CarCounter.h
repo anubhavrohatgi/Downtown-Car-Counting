@@ -23,6 +23,8 @@ public:
 
     double getAvgSpeed(int numFrames);
 
+    int classifyObjects(bool forceAll);
+
     int updateStats(std::vector<Blob>& blobs);
     int updateStats(std::vector<Blob>& blobs, int frameNum); //TODO: use timestamps instead?
 

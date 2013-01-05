@@ -15,32 +15,55 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
     closestBlob(b),
     furthestBlob(b),
     numBlobs(0),
-    KF(*(new KalmanFilter(4,2,0))),
+    xyFilter(*(new KalmanFilter(4,2,0))),
+    txFilter(*(new KalmanFilter(4,2,0))),
+    tyFilter(*(new KalmanFilter(4,2,0))),
     measurement(*(new cv::Mat_<float>(2,1)))
 {
+    xyFilter.statePre.at<float>(0) = b.x;
+    xyFilter.statePre.at<float>(1) = b.y;
+    xyFilter.statePre.at<float>(2) = 0;
+    xyFilter.statePre.at<float>(3) = 0;
+    xyFilter.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
+#if 1
+    txFilter.statePre.at<float>(0) = b.frameNum;
+    txFilter.statePre.at<float>(1) = b.x;
+    txFilter.statePre.at<float>(2) = 0;
+    txFilter.statePre.at<float>(3) = 0;
+    txFilter.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
 
-    //KF = KF(4, 2, 0, CV_32F);
-    //measurement = measurement(2,1);
+    tyFilter.statePre.at<float>(0) = b.frameNum;
+    tyFilter.statePre.at<float>(1) = b.y;
+    tyFilter.statePre.at<float>(2) = 0;
+    tyFilter.statePre.at<float>(3) = 0;
+    tyFilter.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
+#endif
+    setIdentity(xyFilter.measurementMatrix);
+    //setIdentity(xyFilter.processNoiseCov, Scalar::all(1e-4));
+    //setIdentity(xyFilter.measurementNoiseCov, Scalar::all(1e-1));
+    //setIdentity(xyFilter.errorCovPost, Scalar::all(.1));
+#if 1
+    setIdentity(txFilter.measurementMatrix);
+    //setIdentity(txFilter.processNoiseCov, Scalar::all(1e-4));
+    //setIdentity(txFilter.measurementNoiseCov, Scalar::all(1e-1));
+    //setIdentity(txFilter.errorCovPost, Scalar::all(.1));
 
-    measurement.setTo(Scalar(0));
-    KF.statePre.at<float>(0) = b.x;
-    KF.statePre.at<float>(1) = b.y;
-    KF.statePre.at<float>(2) = 0;
-    KF.statePre.at<float>(3) = 0;
-    KF.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
-
-    setIdentity(KF.measurementMatrix);
-    setIdentity(KF.processNoiseCov, Scalar::all(1e-4));
-    setIdentity(KF.measurementNoiseCov, Scalar::all(1e-1));
-    setIdentity(KF.errorCovPost, Scalar::all(.1));
-
-
+    setIdentity(tyFilter.measurementMatrix);
+    //setIdentity(tyFilter.processNoiseCov, Scalar::all(1e-4));
+    //setIdentity(tyFilter.measurementNoiseCov, Scalar::all(1e-1));
+    //setIdentity(tyFilter.errorCovPost, Scalar::all(.1));
+#endif
     addBlob(b);
 }
 
 ObjectIdentifier::~ObjectIdentifier()
 {
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
+    // TODO: why can't I delete these ?
+    //delete &xyFilter;
+    //delete &txFilter;
+    //delete &tyFilter;
+    //delete &measurement;
 }
 
 void ObjectIdentifier::incrementFrameCount()
@@ -97,15 +120,21 @@ bool ObjectIdentifier::addBlob(Blob b)
         closestDistToOrigin = distanceToOrigin;
     }
 
-    Mat prediction = KF.predict();
-    Point predictPt(prediction.at<float>(0),prediction.at<float>(1));
+    xyFilter.predict();
+    txFilter.predict();
+    tyFilter.predict();
+
+    measurement(0) = b.frameNum;
+    measurement(1) = b.x;
+    txFilter.correct(measurement);
+
+    measurement(0) = b.frameNum;
+    measurement(1) = b.y;
+    tyFilter.correct(measurement);
 
     measurement(0) = b.x;
     measurement(1) = b.y;
-    // generate measurement
-    //measurement += KF.measurementMatrix*state;
-
-    Mat estimated = KF.correct(measurement);
+    xyFilter.correct(measurement);
 }
 
 void ObjectIdentifier::printPoints()
@@ -119,6 +148,28 @@ void ObjectIdentifier::printPoints()
 double ObjectIdentifier::distanceTravelled()
 {
     return distanceBetweenBlobs(furthestBlob, closestBlob);
+}
+
+double ObjectIdentifier::getXMovement()
+{
+    double lastX = blobs.at(0).x;
+    double xMovement = 0;
+    for (int i = 1; i < blobs.size(); i++) {
+        xMovement += (blobs.at(i).x - lastX);
+        lastX = blobs.at(i).x;
+    }
+    return xMovement;
+}
+
+double ObjectIdentifier::getYMovement()
+{
+    double lastY = blobs.at(0).y;
+    double yMovement = 0;
+    for (int i = 1; i < blobs.size(); i++) {
+        yMovement += (blobs.at(i).y - lastY);
+        lastY = blobs.at(i).y;
+    }
+    return yMovement;
 }
 
 double ObjectIdentifier::errFromLine(Blob b)
@@ -179,23 +230,17 @@ double ObjectIdentifier::errTY(int frameNum, double y)
     return distance;
 }
 
-bool ObjectIdentifier::continuesTrend(Blob b)
-{
-    // TODO: find more generic way to do this
-    return true;
-}
-
 double ObjectIdentifier::distFromExpectedY(double x, double y)
 {
-        if (blobs.size()  < 2) {
-            return std::numeric_limits<double>::max(); // MAX_INT
-        }
+    if (blobs.size()  < 2) {
+        return std::numeric_limits<double>::max(); // MAX_INT
+    }
 
-        pair<double,double> line = xyLeastSqrRegression(blobs, blobs.size());
-        double slope = line.first;
-        double y_int = line.second;
-        double y_exp = slope * x + y_int;
-        return abs(y - y_exp);
+    pair<double,double> line = xyLeastSqrRegression(blobs, blobs.size());
+    double slope = line.first;
+    double y_int = line.second;
+    double y_exp = slope * x + y_int;
+    return abs(y - y_exp);
 }
 
 double ObjectIdentifier::distFromExpectedY(double y, int frameNum)
@@ -216,12 +261,25 @@ double ObjectIdentifier::distFromExpectedX(double x, int frameNum)
     return abs(x - x_exp);
 }
 
-double ObjectIdentifier::distFromPredicted(double x, double y)
+double ObjectIdentifier::distToPredictedXY(double x, double y)
 {
-    // First predict, to update the internal statePre variable
-    Mat prediction = KF.predict();
-    Point predictPt(prediction.at<float>(0),prediction.at<float>(1));
-    return distance(x, y, predictPt.x, predictPt.y);
+    Mat prediction = xyFilter.predict();
+    //printf("Predicted X %f Y %f\n", prediction.at<float>(0), prediction.at<float>(1));
+    return distance(x, y, prediction.at<float>(0), prediction.at<float>(1));
+}
+
+double ObjectIdentifier::distToPredictedTX(int frameNum, double x)
+{
+    Mat prediction = txFilter.predict();
+    //printf("Predicted T %f X %f\n", prediction.at<float>(0), prediction.at<float>(1));
+    return distance(frameNum, x, prediction.at<float>(0), prediction.at<float>(1));
+}
+
+double ObjectIdentifier::distToPredictedTY(int frameNum, double y)
+{
+    Mat prediction = tyFilter.predict();
+    //printf("Predicted T %f Y %f\n", prediction.at<float>(0), prediction.at<float>(1));
+    return distance(frameNum, y, prediction.at<float>(0), prediction.at<float>(1));
 }
 
 Blob ObjectIdentifier::getLastBlob()

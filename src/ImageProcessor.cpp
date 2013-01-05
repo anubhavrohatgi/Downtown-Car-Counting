@@ -52,6 +52,7 @@ void ImageProcessor::processVideoFile(const char * path)
         printf("%d / %d  %f pct\n", framesProcessed, numFrames, ((double)framesProcessed / (double)numFrames) * 100);
         if (waitKey(1) >= 0) break;
     }
+    carCounter->classifyObjects(true);
 }
 
 int ImageProcessor::processFrame(Mat inFrame)

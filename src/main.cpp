@@ -164,7 +164,7 @@ void on_mouse(int event, int x, int y, int flags, void* param) {
 
 int main (int argc, char * const argv[]) {
     Mat img(500, 500, CV_8UC3);
-    KalmanFilter KF(4, 2, 0);
+    KalmanFilter xyFilter(4, 2, 0);
     Mat_<float> state(4, 1); /* (x, y, Vx, Vy) */
     Mat processNoise(4, 1, CV_32F);
     Mat_<float> measurement(2,1);
@@ -181,16 +181,16 @@ int main (int argc, char * const argv[]) {
             waitKey(30);
             continue;
         }
-        KF.statePre.at<float>(0) = mouse_info.x;
-        KF.statePre.at<float>(1) = mouse_info.y;
-        KF.statePre.at<float>(2) = 0;
-        KF.statePre.at<float>(3) = 0;
-        KF.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
+        xyFilter.statePre.at<float>(0) = mouse_info.x;
+        xyFilter.statePre.at<float>(1) = mouse_info.y;
+        xyFilter.statePre.at<float>(2) = 0;
+        xyFilter.statePre.at<float>(3) = 0;
+        xyFilter.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
 
-        setIdentity(KF.measurementMatrix);
-        setIdentity(KF.processNoiseCov, Scalar::all(1e-4));
-        setIdentity(KF.measurementNoiseCov, Scalar::all(1e-1));
-        setIdentity(KF.errorCovPost, Scalar::all(.1));
+        setIdentity(xyFilter.measurementMatrix);
+        setIdentity(xyFilter.processNoiseCov, Scalar::all(1e-4));
+        setIdentity(xyFilter.measurementNoiseCov, Scalar::all(1e-1));
+        setIdentity(xyFilter.errorCovPost, Scalar::all(.1));
 
         mousev.clear();
         kalmanv.clear();
@@ -200,7 +200,7 @@ int main (int argc, char * const argv[]) {
         {
 //            Point statePt(state(0),state(1));
 
-            Mat prediction = KF.predict();
+            Mat prediction = xyFilter.predict();
             Point predictPt(prediction.at<float>(0),prediction.at<float>(1));
 
             measurement(0) = mouse_info.x;
@@ -211,7 +211,7 @@ int main (int argc, char * const argv[]) {
             // generate measurement
             //measurement += KF.measurementMatrix*state;
 
-            Mat estimated = KF.correct(measurement);
+            Mat estimated = xyFilter.correct(measurement);
             Point statePt(estimated.at<float>(0),estimated.at<float>(1));
             kalmanv.push_back(statePt);
 

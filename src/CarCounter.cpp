@@ -18,8 +18,8 @@ CarCounter::CarCounter() :
 CarCounter::~CarCounter()
 {
     // Log all remaining blobs
+    classifyObjects(true);
     blobsToLogAndRemove(allBlobs.size());
-    fclose(logFile);
 }
 
 int CarCounter::updateStats(vector<Blob>& blobs)
@@ -29,7 +29,6 @@ int CarCounter::updateStats(vector<Blob>& blobs)
 
 int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
     frameNumber = frameNum;
-    int newROs = 0;
     int numBlobs = blobs.size();
     int numObjs = objects.size();
     if (numBlobs > 0) printf("Frame %d\n", blobs.front().frameNum);
@@ -55,16 +54,17 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
             // Identifier we're testing
             ObjectIdentifier * oi = &*obj;
             int oiID = oi->getId();
-
 #if 1
             double distToLast = oi->distanceFromLastBlob(blob);
-            double distToPredicted = oi->distFromPredicted(blob.x, blob.y);
+            double toPredictedXY = oi->distToPredictedXY(blob.x, blob.y);
+            double toPredictedTX = oi->distToPredictedTX(frameNum, blob.x);
+            double toPredictedTY = oi->distToPredictedTY(frameNum, blob.y);
             double e1 = oi->errXY(blob.x, blob.y);
             double e2 = oi->errTX(blob.frameNum, blob.x);
             double e3 = oi->errTY(blob.frameNum, blob.y);
             double e = sqrt(e1*e1 + e2*e2 + e3*e3);
 
-            printf("ToLast %f  Predicted %f\n", distToLast, distToPredicted);
+            printf("Predicted XY %f TX %f TY %f\n", toPredictedXY, toPredictedTX, toPredictedTY);
             printf("ID %d XY %f TX %f TY %f   D %f      SumSq: %f\n", oiID, e1, e2, e3, oi->distanceFromLastBlob(blob), e);
 
             if (oi->getNumBlobs() <= 5) {
@@ -77,8 +77,8 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
                 minError = e;
                 bestFit = oi;
                 printf("Best fit accepted\n");
-            } else if (distToPredicted < 30 && distToPredicted < minError) {
-                minError = distToPredicted;
+            } else if (toPredictedXY < 30 && toPredictedXY < minError) {
+                minError = toPredictedXY;
                 bestFit = oi;
                 printf("Best fit accepted\n");
             }
@@ -89,7 +89,7 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
                 double err1 = oi->distFromExpectedX(blob.x, blob.frameNum);
                 double err2 = oi->distFromExpectedY(blob.x, blob.y);
                 double err3 = oi->distFromExpectedY(blob.y, (int)blob.frameNum);
-                double err4 = oi->distFromPredicted(blob.x, blob.y);
+                double err4 = oi->distToPredictedXY(blob.x, blob.y);
                 printf("OI %d Err from Predicted %f\n", oi->getId(), err4);
                 if (oi->inStartingZone(blob)) printf("IN STARTING ZONE\n");
                 double errold = err1 + err2 + err3;
@@ -150,13 +150,21 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
         allBlobs.push_back(blob);
     }
 
+    classifyObjects(false);
+
+    return 0;
+}
+
+int CarCounter::classifyObjects(bool forceAll)
+{
+    int newROs = 0;
     // Iterate through ObjectIdentifiers and see if we can classify (or discard) them
     for (list<ObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
 
         ObjectIdentifier * oi = &*obj;
         oi->incrementFrameCount(); // Update 'age' counter
 
-        int lastSeen = oi->getLastSeenNFramesAgo();
+        int lastSeen = forceAll ? 1000 : oi->getLastSeenNFramesAgo(); // if forceAll is set, set lastSeen artificially high for each object
         double distanceTravelled = oi->distanceTravelled();
         int numBlobs = oi->getNumBlobs();
 
@@ -233,10 +241,13 @@ int CarCounter::writeToLog(const char * line)
 {
     if (!logFilePath) return -1;
 
-    writesToLog++;
-    if (!logFile) {
+    if (writesToLog == 0) {
         logFile = fopen(logFilePath, "w");
+    } else {
+        logFile = fopen(logFilePath, "a");
     }
     fprintf(logFile, "%s", line);
+    fclose(logFile);
+    writesToLog++;
     return 0;
 }

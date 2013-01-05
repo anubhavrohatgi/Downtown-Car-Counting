@@ -37,6 +37,9 @@ public:
 
     int getFirstFrame();
 
+    double getXMovement();
+    double getYMovement();
+
     // Returned in pixels per frame
     double getSpeed();
 
@@ -54,9 +57,9 @@ public:
     double distFromExpectedY(double y, int frameNum);
     double distFromExpectedX(double y, int frameNum);
 
-    double distFromPredicted(double x, double y);
-
-    bool continuesTrend(Blob b);
+    double distToPredictedXY(double x, double y);
+    double distToPredictedTX(int frameNum, double x);
+    double distToPredictedTY(int frameNum, double y);
 
     double rValues()
     {
@@ -78,8 +81,8 @@ private:
     double distance(double x1, double x2, double y1, double y2);
 
     std::pair<double,double> xyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
-    std::pair<double,double> tyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
     std::pair<double,double> txLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
+    std::pair<double,double> tyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
 
     int lastSeen;
     int frameCount;
@@ -96,8 +99,10 @@ private:
     int numBlobs;
 
     // Experimental
-    cv::KalmanFilter & KF;//(4, 2, 0);
-    cv::Mat_<float> & measurement;//(2,1);
+    cv::KalmanFilter& xyFilter;//(4, 2, 0);
+    cv::KalmanFilter& txFilter;//(4, 2, 0);
+    cv::KalmanFilter& tyFilter;//(4, 2, 0);
+    cv::Mat_<float>& measurement;//(2,1);
 };
 
 #endif
