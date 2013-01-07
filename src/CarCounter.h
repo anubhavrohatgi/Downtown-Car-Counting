@@ -25,8 +25,7 @@ public:
 
     int classifyObjects(bool forceAll);
 
-    int updateStats(std::vector<Blob>& blobs);
-    int updateStats(std::vector<Blob>& blobs, int frameNum); //TODO: use timestamps instead?
+    int updateStats(std::vector<Blob>& blobs, long currentTime); //TODO: use timestamps instead?
 
 private:
     double distanceThreshold;

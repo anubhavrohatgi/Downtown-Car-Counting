@@ -10,7 +10,6 @@ public:
         x(x),
         y(y),
         area(area),
-        frameNum(frameNumber),
         time(time)
     {
 
@@ -19,7 +18,6 @@ public:
     Blob(double x, double y, int frameNumber, long time) :
         x(x),
         y(y),
-        frameNum(frameNumber),
         time(time)
     {
 
@@ -40,7 +38,6 @@ public:
     double x;
     double y;
     double area;
-    int frameNum;
     long time;
 private:
     int clusterId;

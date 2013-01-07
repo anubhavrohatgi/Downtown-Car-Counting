@@ -56,7 +56,7 @@ void ImageProcessor::processVideoFile(const char * path)
     carCounter->classifyObjects(true);
 }
 
-int ImageProcessor::processFrame(Mat inFrame, long time)
+int ImageProcessor::processFrame(Mat inFrame, long currentTime)
 {
     // Profiling and Stats
     long frameStart = getTime();
@@ -162,10 +162,10 @@ int ImageProcessor::processFrame(Mat inFrame, long time)
             vector<Blob> blobs;
             for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
                     CvBlob blob = *(it->second);
-                    Blob b(blob.centroid.x, blob.centroid.y, blob.area, frameCount, time);
+                    Blob b(blob.centroid.x, blob.centroid.y, blob.area, frameCount, currentTime);
                     blobs.push_back(b);
             }
-            carCounter->updateStats(blobs);
+            carCounter->updateStats(blobs, currentTime);
         }
 
         if (showFrames) {

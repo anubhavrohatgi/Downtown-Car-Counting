@@ -17,9 +17,9 @@ public:
     // Returns fitness on scale of 0 - 100
     virtual int getFit(Blob b) = 0;
 
-    void incrementFrameCount();
+    void updateTime(long currentTime);
 
-    int getLastSeenNFramesAgo();
+    long lastSeen();
 
     // Returns true if blob was accepted, false if not
     virtual bool addBlob(Blob b);
@@ -36,9 +36,9 @@ public:
 
     int getId();
 
-    int lifetime();
+    long lifetime();
 
-    int getFirstFrame();
+    int getFirstTime();
 
     double getXMovement();
     double getYMovement();
@@ -53,16 +53,16 @@ public:
     std::vector<Blob> * getBlobs();
 
     double errXY(double x, double y);
-    double errTX(int frameNum, double x);
-    double errTY(int frameNum, double y);
+    double errTX(long time, double x);
+    double errTY(long time, double y);
 
     double distFromExpectedY(double x, double y);
-    double distFromExpectedY(double y, int frameNum);
-    double distFromExpectedX(double y, int frameNum);
+    double distFromExpectedY(double y, long time);
+    double distFromExpectedX(double y, long time);
 
     double distToPredictedXY(double x, double y);
-    double distToPredictedTX(int frameNum, double x);
-    double distToPredictedTY(int frameNum, double y);
+    double distToPredictedTX(long time, double x);
+    double distToPredictedTY(long time, double y);
 
     double rValues()
     {
@@ -100,9 +100,8 @@ private:
     std::pair<double,double> txLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
     std::pair<double,double> tyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
 
-    int lastSeen;
+    long time;
     int frameCount;
-    int lastBlobFrameNum;
     Blob lastBlob;
 
     Blob closestBlob;

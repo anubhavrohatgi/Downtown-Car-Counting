@@ -7,7 +7,6 @@ CarCounter::CarCounter() :
     bikeCount(0),
     streetcarCount(0),
     rosCreated(0),
-    frameNumber(0),
     logFile(NULL),
     logFilePath(NULL),
     writesToLog(0)
@@ -22,28 +21,22 @@ CarCounter::~CarCounter()
     blobsToLogAndRemove(allBlobs.size());
 }
 
-int CarCounter::updateStats(vector<Blob>& blobs)
-{
-    updateStats(blobs, ++frameNumber);
-}
-
-int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
-    frameNumber = frameNum;
+int CarCounter::updateStats(vector<Blob>& blobs, long currentTime) {
     int numBlobs = blobs.size();
     int numObjs = objects.size();
-    if (numBlobs > 0) printf("Frame %d\n", blobs.front().frameNum);
+    if (numBlobs > 0) printf("Time %ld\n", blobs.front().time);
     // Classify the Blobs as Probable Road Objects
     for (int i = 0; i < blobs.size(); i++) {
 
         Blob blob = blobs.at(i);
-        blob.frameNum = frameNumber; // Hack to store the frame number in the blob data
+        blob.time = currentTime;
 
         ObjectIdentifier * bestFit = NULL;
         ObjectIdentifier * candidateFit = NULL; // Used if an identified blob is on the edge of our parameters
 
         double minError = std::numeric_limits<double>::max(); //MAX_DOUBLE
 
-        printf("\nBlob for Frame %d, (x,y) %f,%f\n", frameNum, blob.x, blob.y);
+        printf("\nBlob for t %ld, (x,y) %f,%f\n", blob.time, blob.x, blob.y);
         if (ObjectIdentifier::inStartingZone(blob)) {
             printf("In starting zone\n");
         } else {
@@ -53,15 +46,16 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
 
             // Identifier we're testing
             EastboundObjectIdentifier * oi = &*obj;
+            oi->updateTime(currentTime); // Update 'age' counter
             int oiID = oi->getId();
 #if 1
             double distToLast = oi->distanceFromLastBlob(blob);
             double toPredictedXY = oi->distToPredictedXY(blob.x, blob.y);
-            double toPredictedTX = oi->distToPredictedTX(frameNum, blob.x);
-            double toPredictedTY = oi->distToPredictedTY(frameNum, blob.y);
+            double toPredictedTX = oi->distToPredictedTX(blob.time, blob.x);
+            double toPredictedTY = oi->distToPredictedTY(blob.time, blob.y);
             double e1 = oi->errXY(blob.x, blob.y);
-            double e2 = oi->errTX(blob.frameNum, blob.x);
-            double e3 = oi->errTY(blob.frameNum, blob.y);
+            double e2 = oi->errTX(blob.time, blob.x);
+            double e3 = oi->errTY(blob.time, blob.y);
             double e = sqrt(e1*e1 + e2*e2 + e3*e3);
 
             printf("Predicted XY %f TX %f TY %f\n", toPredictedXY, toPredictedTX, toPredictedTY);
@@ -86,9 +80,9 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
 #else
             double x = blob.x;
             if (oi->getNumBlobs() >= 2) {
-                double err1 = oi->distFromExpectedX(blob.x, blob.frameNum);
+                double err1 = oi->distFromExpectedX(blob.x, blob.time);
                 double err2 = oi->distFromExpectedY(blob.x, blob.y);
-                double err3 = oi->distFromExpectedY(blob.y, (int)blob.frameNum);
+                double err3 = oi->distFromExpectedY(blob.y, (int)blob.time);
                 double err4 = oi->distToPredictedXY(blob.x, blob.y);
                 printf("OI %d Err from Predicted %f\n", oi->getId(), err4);
                 if (oi->inStartingZone(blob)) printf("IN STARTING ZONE\n");
@@ -97,8 +91,8 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
                 double localmin = std::min(std::min(err1, err2), std::min(err2, err3));
 
                 double e1 = oi->errXY(blob.x, blob.y);
-                double e2 = oi->errTX(blob.frameNum, blob.x);
-                double e3 = oi->errTY(blob.frameNum, blob.y);
+                double e2 = oi->errTX(blob.time, blob.x);
+                double e3 = oi->errTY(blob.time, blob.y);
                 double e = sqrt(e1*e1 + e2*e2 + e3*e3);
                 double eold = e1 + e2 + e3;
 
@@ -162,9 +156,8 @@ int CarCounter::classifyObjects(bool forceAll)
     for (list<EastboundObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
 
         EastboundObjectIdentifier * oi = &*obj;
-        oi->incrementFrameCount(); // Update 'age' counter
 
-        int lastSeen = forceAll ? 1000 : oi->getLastSeenNFramesAgo(); // if forceAll is set, set lastSeen artificially high for each object
+        int lastSeen = forceAll ? 1000 : oi->lastSeen(); // if forceAll is set, set lastSeen artificially high for each object
         double distanceTravelled = oi->distanceTravelled();
         int numBlobs = oi->getNumBlobs();
 
@@ -174,19 +167,19 @@ int CarCounter::classifyObjects(bool forceAll)
                     carCount++;
                     obj = objects.erase(obj);
                     newROs++;
-                    printf("END ZONE CAR: %d (%d - %d) speed %f\n", (int)distanceTravelled, oi->getFirstFrame(), oi->getLastBlob().frameNum, oi->getSpeed());
+                    printf("END ZONE CAR: %d speed %f\n", (int)distanceTravelled, oi->getSpeed());
                     printf("ID %d, %d pts  txR  %f  tyR  %f  xyR  %f  Sum: %f\n", oi->getId(), oi->getNumBlobs(), oi->txR, oi->tyR, oi->xyR, oi->txR + oi->tyR + oi->xyR);
                     //oi->printPoints();
                 } else if (oi->distanceTravelled() > 150) { // TODO: use consts, note: normal distance is about ~300
                     carCount++;
                     obj = objects.erase(obj);
                     newROs++;
-                    printf("DISTANCE CAR: %d (%d - %d) speed %f\n", (int)distanceTravelled, oi->getFirstFrame(), oi->getLastBlob().frameNum, oi->getSpeed());
+                    printf("DISTANCE CAR: %d speed %f\n", (int)distanceTravelled, oi->getSpeed());
                     printf("ID %d, %d pts  txR  %f  tyR  %f  xyR  %f  Sum: %f\n", oi->getId(), oi->getNumBlobs(), oi->txR, oi->tyR, oi->xyR, oi->txR + oi->tyR + oi->xyR);
                     //oi->printPoints();
                 } else {
                     // Discard identifier
-                    printf("DISCARDED CAR numBlobs %d lastSeen %d dist %d speed %f\n", numBlobs, lastSeen, (int)distanceTravelled, oi->getSpeed());
+                    printf("DISCARDED CAR numBlobs %d dist %d speed %f\n", numBlobs, (int)distanceTravelled, oi->getSpeed());
                     printf("ID %d, %d pts  txR  %f  tyR  %f  xyR  %f  Sum: %f\n", oi->getId(), oi->getNumBlobs(), oi->txR, oi->tyR, oi->xyR, oi->txR + oi->tyR + oi->xyR);
                     //obj->printPoints();
                     obj = objects.erase(obj);
@@ -220,10 +213,10 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
 
     if (writesToLog == 0) {
         // Create header and legend
-        writeToLog("frame,x,y,area,time,id\n"); // TODO: beef up logging
+        writeToLog("time,x,y,area,id\n"); // TODO: beef up logging
         for (int j = 1; j < 8; j++) {
             Blob b = allBlobs.front();
-            sprintf(buf, "%d,%f,%f,%d,%ld,%d\n", b.frameNum, b.x + 35 * j, b.y, 4000, (long)0, j);
+            sprintf(buf, "%ld,%f,%f,%d,%ld,%d\n", b.time, b.x + 35 * j, b.y, 4000, j);
             writeToLog(buf);
         }
     }
@@ -231,8 +224,7 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
     for (int i = 0; i < numBlobs; i++) {
         Blob b = allBlobs.front();
         allBlobs.pop_front();
-        unsigned int frameNum = b.frameNum;
-        sprintf(buf, "%d,%f,%f,%d,%ld,%d\n", frameNum, b.x, b.y, (int)b.area, b.time, b.getClusterId());
+        sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
         writeToLog(buf);
     }
 }

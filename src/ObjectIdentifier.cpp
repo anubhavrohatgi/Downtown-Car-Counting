@@ -7,7 +7,6 @@ using namespace std;
 using namespace cv;
 
 ObjectIdentifier::ObjectIdentifier(Blob b) :
-    lastSeen(0),
     frameCount(0),
     id(1 + (globalID++ % 8)),
     closestDistToOrigin(999999), // TODO: maxint
@@ -15,6 +14,7 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
     closestBlob(b),
     furthestBlob(b),
     numBlobs(0),
+    time(b.time),
     xyFilter(*(new KalmanFilter(4,2,0))),
     txFilter(*(new KalmanFilter(4,2,0))),
     tyFilter(*(new KalmanFilter(4,2,0))),
@@ -27,13 +27,13 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
     xyFilter.statePre.at<float>(3) = 0;
     xyFilter.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
 #if 1
-    txFilter.statePre.at<float>(0) = b.frameNum;
+    txFilter.statePre.at<float>(0) = b.time;
     txFilter.statePre.at<float>(1) = b.x;
     txFilter.statePre.at<float>(2) = 0;
     txFilter.statePre.at<float>(3) = 0;
     txFilter.transitionMatrix = *(Mat_<float>(4, 4) << 1,0,0,0,   0,1,0,0,  0,0,1,0,  0,0,0,1);
 
-    tyFilter.statePre.at<float>(0) = b.frameNum;
+    tyFilter.statePre.at<float>(0) = b.time;
     tyFilter.statePre.at<float>(1) = b.y;
     tyFilter.statePre.at<float>(2) = 0;
     tyFilter.statePre.at<float>(3) = 0;
@@ -67,15 +67,14 @@ ObjectIdentifier::~ObjectIdentifier()
     //delete &measurement;
 }
 
-void ObjectIdentifier::incrementFrameCount()
+void ObjectIdentifier::updateTime(long currentTime)
 {
-    frameCount++;
-    lastSeen++;
+    time = currentTime;
 }
 
-int ObjectIdentifier::getLastSeenNFramesAgo()
+long ObjectIdentifier::lastSeen()
 {
-    return lastSeen;
+    return (time - blobs.at(blobs.size() - 1).time);
 }
 
 int ObjectIdentifier::getNumBlobs()
@@ -83,14 +82,14 @@ int ObjectIdentifier::getNumBlobs()
     return numBlobs;
 }
 
-int ObjectIdentifier::getFirstFrame()
+int ObjectIdentifier::getFirstTime()
 {
-    return (blobs.at(0).frameNum);
+    return (blobs.at(0).time);
 }
 
-int ObjectIdentifier::lifetime()
+long ObjectIdentifier::lifetime()
 {
-    return (lastBlob.frameNum - blobs.at(0).frameNum);
+    return (lastBlob.time - blobs.at(0).time);
 }
 
 double ObjectIdentifier::getSpeed()
@@ -104,9 +103,6 @@ bool ObjectIdentifier::addBlob(Blob b)
     numBlobs++;
     lastBlob = b;
     blobs.push_back(b);
-
-    lastSeen = 0;
-    lastBlobFrameNum = frameCount;
 
     // Keep track of closest and furthest blobs from origin
     double distanceToOrigin = distance(b.x, b.y, 0, 0);
@@ -125,11 +121,11 @@ bool ObjectIdentifier::addBlob(Blob b)
     txFilter.predict();
     tyFilter.predict();
 
-    measurement(0) = b.frameNum;
+    measurement(0) = b.time;
     measurement(1) = b.x;
     txFilter.correct(measurement);
 
-    measurement(0) = b.frameNum;
+    measurement(0) = b.time;
     measurement(1) = b.y;
     tyFilter.correct(measurement);
 
@@ -141,8 +137,7 @@ bool ObjectIdentifier::addBlob(Blob b)
 void ObjectIdentifier::printPoints()
 {
     for (int i = 0; i < blobs.size(); i++) {
-        unsigned int frameNum = blobs.at(i).frameNum; // HACK, stored the frameNumber in the blob data
-        printf("%d,%f,%f,%d,%d\n", frameNum, blobs.at(i).x, blobs.at(i).y, (int)blobs.at(i).area, id);
+        printf("%ld,%f,%f,%d,%d\n", blobs.at(i).time, blobs.at(i).x, blobs.at(i).y, (int)blobs.at(i).area, id);
     }
 }
 
@@ -201,7 +196,7 @@ double ObjectIdentifier::errXY(double x, double y)
     return distance;
 }
 
-double ObjectIdentifier::errTX(int frameNum, double x)
+double ObjectIdentifier::errTX(long time, double x)
 {
     pair<double,double> line = txLeastSqrRegression(blobs, blobs.size());
     double slope = line.first;
@@ -212,11 +207,11 @@ double ObjectIdentifier::errTX(int frameNum, double x)
     double B = -1;
     double C = y_int;
 
-    double distance = abs(A*frameNum + B*x + C) / sqrt(A*A + B*B);
+    double distance = abs(A*time + B*x + C) / sqrt(A*A + B*B);
     return distance;
 }
 
-double ObjectIdentifier::errTY(int frameNum, double y)
+double ObjectIdentifier::errTY(long time, double y)
 {
     pair<double,double> line = tyLeastSqrRegression(blobs, blobs.size());
     double slope = line.first;
@@ -227,7 +222,7 @@ double ObjectIdentifier::errTY(int frameNum, double y)
     double B = -1;
     double C = y_int;
 
-    double distance = abs(A*frameNum + B*y + C) / sqrt(A*A + B*B);
+    double distance = abs(A*time + B*y + C) / sqrt(A*A + B*B);
     return distance;
 }
 
@@ -244,21 +239,21 @@ double ObjectIdentifier::distFromExpectedY(double x, double y)
     return abs(y - y_exp);
 }
 
-double ObjectIdentifier::distFromExpectedY(double y, int frameNum)
+double ObjectIdentifier::distFromExpectedY(double y, long time)
 {
     pair<double,double> line = tyLeastSqrRegression(blobs, blobs.size());
     double slope = line.first;
     double y_int = line.second;
-    double y_exp = slope * frameNum + y_int;
+    double y_exp = slope * time + y_int;
     return abs(y - y_exp);
 }
 
-double ObjectIdentifier::distFromExpectedX(double x, int frameNum)
+double ObjectIdentifier::distFromExpectedX(double x, long time)
 {
     pair<double,double> line = txLeastSqrRegression(blobs, blobs.size());
     double slope = line.first;
     double x_int = line.second;
-    double x_exp = slope * frameNum + x_int;
+    double x_exp = slope * time + x_int;
     return abs(x - x_exp);
 }
 
@@ -269,18 +264,18 @@ double ObjectIdentifier::distToPredictedXY(double x, double y)
     return distance(x, y, prediction.at<float>(0), prediction.at<float>(1));
 }
 
-double ObjectIdentifier::distToPredictedTX(int frameNum, double x)
+double ObjectIdentifier::distToPredictedTX(long time, double x)
 {
     Mat prediction = txFilter.predict();
     //printf("Predicted T %f X %f\n", prediction.at<float>(0), prediction.at<float>(1));
-    return distance(frameNum, x, prediction.at<float>(0), prediction.at<float>(1));
+    return distance(time, x, prediction.at<float>(0), prediction.at<float>(1));
 }
 
-double ObjectIdentifier::distToPredictedTY(int frameNum, double y)
+double ObjectIdentifier::distToPredictedTY(long time, double y)
 {
     Mat prediction = tyFilter.predict();
     //printf("Predicted T %f Y %f\n", prediction.at<float>(0), prediction.at<float>(1));
-    return distance(frameNum, y, prediction.at<float>(0), prediction.at<float>(1));
+    return distance(time, y, prediction.at<float>(0), prediction.at<float>(1));
 }
 
 Blob ObjectIdentifier::getLastBlob()
@@ -389,13 +384,13 @@ pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //sum of x
-      SUMx = SUMx + blobs.at(blobs.size() - 1 - i).frameNum;
+      SUMx = SUMx + blobs.at(blobs.size() - 1 - i).time;
       //sum of y
       SUMy = SUMy + blobs.at(blobs.size() - 1 - i).x;
       //sum of squared x*y
-      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).frameNum * blobs.at(blobs.size() - 1 - i).x;
+      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).time * blobs.at(blobs.size() - 1 - i).x;
       //sum of squared x
-      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i).frameNum * blobs.at(blobs.size() - 1 - i).frameNum;
+      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i).time * blobs.at(blobs.size() - 1 - i).time;
    }
 
    //calculate the means of x and y
@@ -422,7 +417,7 @@ pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //current (y_i - a0 - a1 * x_i)^2
-      Yres = pow((blobs.at(blobs.size() - 1 - i).x - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).frameNum)), 2);
+      Yres = pow((blobs.at(blobs.size() - 1 - i).x - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).time)), 2);
 
       //sum of (y_i - a0 - a1 * x_i)^2
       SUM_Yres += Yres;
@@ -434,7 +429,7 @@ pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, 
       SUMres += res;
 #if 0
       printf ("   (%0.2f %0.2f)      %0.5E         %0.5E\n",
-       blobs.at(blobs.size() - 1 - i).frameNum, blobs.at(blobs.size() - 1 - i).x, res, Yres);
+       blobs.at(blobs.size() - 1 - i).time, blobs.at(blobs.size() - 1 - i).x, res, Yres);
 #endif
    }
 
@@ -476,13 +471,13 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //sum of x
-      SUMx = SUMx + blobs.at(blobs.size() - 1 - i).frameNum;
+      SUMx = SUMx + blobs.at(blobs.size() - 1 - i).time;
       //sum of y
       SUMy = SUMy + blobs.at(blobs.size() - 1 - i).y;
       //sum of squared x*y
-      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).frameNum * blobs.at(blobs.size() - 1 - i).y;
+      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).time * blobs.at(blobs.size() - 1 - i).y;
       //sum of squared x
-      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i).frameNum * blobs.at(blobs.size() - 1 - i).frameNum;
+      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i).time * blobs.at(blobs.size() - 1 - i).time;
    }
 
    //calculate the means of x and y
@@ -509,7 +504,7 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //current (y_i - a0 - a1 * x_i)^2
-      Yres = pow((blobs.at(blobs.size() - 1 - i).y - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).frameNum)), 2);
+      Yres = pow((blobs.at(blobs.size() - 1 - i).y - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).time)), 2);
 
       //sum of (y_i - a0 - a1 * x_i)^2
       SUM_Yres += Yres;
@@ -521,7 +516,7 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
       SUMres += res;
 #if 0
       printf ("   (%0.2f %0.2f)      %0.5E         %0.5E\n",
-       blobs.at(blobs.size() - 1 - i).frameNum, blobs.at(blobs.size() - 1 - i).y, res, Yres);
+       blobs.at(blobs.size() - 1 - i).time, blobs.at(blobs.size() - 1 - i).y, res, Yres);
 #endif
    }
 

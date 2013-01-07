@@ -50,45 +50,43 @@ int DataSourceManager::processCsvFile(const char * path)
     // Map of blobs
     // We store them per frame so that they can be processed per frame like they would be if generated from a video
     vector<Blob> blobs;
-    int lastFrameNum = -1;
+    long lastTime = -1;
 
     for (int i = 0; i < array.size(); i++)
     {
         if (array[i].size() >= 4) { // Expect at least 4 columns
             // Read Blob from row
-            int frameNum = atoi(array[i][0].c_str());
+            long time = atoi(array[i][0].c_str());
             double x = atof(array[i][1].c_str());
             double y = atof(array[i][2].c_str());
             double area = atoi(array[i][3].c_str());
-            long time = frameNum;
-            if (array[i].size() >= 5) {
-                time = atoi(array[i][4].c_str());
-            }
-            if (area != 4000) { // Hack, using area = 4000 as a legend when graphing in R
 
-                Blob b(x, y, area, frameNum, time);
-                if (lastFrameNum == -1) {
-                    lastFrameNum = frameNum;
+            if (area != 4000) { // Hack, using area = 4000 as a legend when graphing in R
+                Blob b(x, y, area, time);
+                if (lastTime == -1) {
+                    lastTime = time;
                 }
 
                 // New frame in the log file, process blobs stored for last frame
-                if (frameNum != lastFrameNum) {
-                    counter.updateStats(blobs, blobs.at(0).frameNum);
+                if (time != lastTime) {
+                    counter.updateStats(blobs, lastTime);
                     blobs.clear();
                 }
 
                 // Store new blob
                 blobs.push_back(b);
-                lastFrameNum = frameNum;
+                lastTime = time;
             }
         }
     }
 
+#if 0 // TODO: shouldn't be necessary
     // Make sure blobs time out
     blobs.clear();
     for (int i = 0; i < 200; i++) { // TODO: get a number for this instead of 200
         counter.updateStats(blobs);
     }
+#endif
     return counter.getCarCount();
 }
 
