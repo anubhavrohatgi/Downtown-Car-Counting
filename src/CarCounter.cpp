@@ -21,7 +21,7 @@ CarCounter::~CarCounter()
     blobsToLogAndRemove(allBlobs.size());
 
     for (int i = 0; i < unidentifiedBlobs.size(); i++) {
-        delete unidentifiedBlobs.at(i);
+        //delete unidentifiedBlobs.at(i);
     }
 }
 
@@ -96,19 +96,34 @@ int CarCounter::classifyObjects(bool forceTimeout)
 
         if (lastSeen > oi->getTimeout()) {
             // Object has timed out
-            if (oi->getType() != EastboundObjectIdentifier::UNKNOWN) {
-                printf("OBJECT IDENTIFIED - type %d\n", oi->getType());
+            if (oi->getType() != ObjectIdentifier::UNKNOWN) {
+                printf("EASTBOUND OBJECT IDENTIFIED - type %d\n", oi->getType());
                 printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
                 newlyClassified++;
             }
-            // TODO: delete eastboundObjects.at(i);
+            delete eastboundObjects.at(i);
+        }
+    }
+
+    for (int i = 0; i < westboundObjects.size(); i++) {
+        WestboundObjectIdentifier * oi = westboundObjects.at(i);
+        long lastSeen = forceTimeout ? std::numeric_limits<long>::max() : oi->lastSeen();
+
+        if (lastSeen > oi->getTimeout()) {
+            // Object has timed out
+            if (oi->getType() != ObjectIdentifier::UNKNOWN) {
+                printf("WESTBOUND OBJECT IDENTIFIED - type %d\n", oi->getType());
+                printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
+                newlyClassified++;
+            }
+            delete westboundObjects.at(i);
         }
     }
 
     // Log old blobs to file
     // TODO: better way to do memory mgmt
     if (allBlobs.size() > 500) {
-        blobsToLogAndRemove(300);
+        //blobsToLogAndRemove(300);
     }
     return newlyClassified;
 }
@@ -138,6 +153,7 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
         Blob& b = *allBlobs.at(i);
         sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
         writeToLog(buf);
+        delete &b;
     }
 }
 

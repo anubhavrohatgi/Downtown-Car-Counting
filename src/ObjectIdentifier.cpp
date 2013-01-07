@@ -62,7 +62,7 @@ ObjectIdentifier::ObjectIdentifier(Blob& b) :
 ObjectIdentifier::~ObjectIdentifier()
 {
     for (int i = 0; i < blobs.size(); i++) {
-        delete blobs.at(i);
+        //delete blobs.at(i);
     }
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
     // TODO: why can't I delete these ?
