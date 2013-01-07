@@ -18,7 +18,8 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
     xyFilter(*(new KalmanFilter(4,2,0))),
     txFilter(*(new KalmanFilter(4,2,0))),
     tyFilter(*(new KalmanFilter(4,2,0))),
-    measurement(*(new cv::Mat_<float>(2,1)))
+    measurement(*(new cv::Mat_<float>(2,1))),
+    type(UNKNOWN)
 {
     xyFilter.statePre.at<float>(0) = b.x;
     xyFilter.statePre.at<float>(1) = b.y;

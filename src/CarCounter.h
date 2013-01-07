@@ -2,7 +2,7 @@
 #define _CAR_COUNTER_H_
 
 #include "Blob.h"
-#include "ObjectIdentifier.h"
+#include "EastboundObjectIdentifier.h"
 #include "opencv2/core/core.hpp"
 #include <list>
 
@@ -39,7 +39,7 @@ private:
 
     cv::Rect * boundaries;
 
-    std::list<ObjectIdentifier> objects;
+    std::list<EastboundObjectIdentifier> objects;
     std::list<Blob> unidentifiedBlobs;
 
     std::list<Blob> allBlobs;

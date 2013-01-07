@@ -14,6 +14,9 @@ public:
 
     ~ObjectIdentifier();
 
+    // Returns fitness on scale of 0 - 100
+    virtual int getFit(Blob b) = 0;
+
     void incrementFrameCount();
 
     int getLastSeenNFramesAgo();
@@ -71,6 +74,19 @@ public:
     double tyR;
     double txR;
 
+    enum ObjectType {
+        UNKNOWN,
+        VEHICLE,
+        STREET_CAR,
+        PERSON,
+        BICYCLE,
+        NUM_CLASSES
+    };
+
+    ObjectType getType() {
+        return type;
+    }
+
 private:
     int id;
 
@@ -103,6 +119,8 @@ private:
     cv::KalmanFilter& txFilter;//(4, 2, 0);
     cv::KalmanFilter& tyFilter;//(4, 2, 0);
     cv::Mat_<float>& measurement;//(2,1);
+
+    ObjectType type;
 };
 
 #endif

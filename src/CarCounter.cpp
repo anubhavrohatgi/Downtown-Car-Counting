@@ -49,10 +49,10 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
         } else {
             printf("Not in starting zone\n");
         }
-        for (list<ObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
+        for (list<EastboundObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
 
             // Identifier we're testing
-            ObjectIdentifier * oi = &*obj;
+            EastboundObjectIdentifier * oi = &*obj;
             int oiID = oi->getId();
 #if 1
             double distToLast = oi->distanceFromLastBlob(blob);
@@ -136,7 +136,7 @@ int CarCounter::updateStats(vector<Blob>& blobs, int frameNum) {
             printf("ADD TO CANDIDATE OBJ %d\n", id);
         } else if (ObjectIdentifier::inStartingZone(blob)) {
             // No suitable identifier exists, this may be a new road object, create new identifier
-            ObjectIdentifier obj(blob);
+            EastboundObjectIdentifier obj(blob);
             int id = obj.getId();
             blob.setClusterId(id);
             objects.push_back(obj);
@@ -159,9 +159,9 @@ int CarCounter::classifyObjects(bool forceAll)
 {
     int newROs = 0;
     // Iterate through ObjectIdentifiers and see if we can classify (or discard) them
-    for (list<ObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
+    for (list<EastboundObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
 
-        ObjectIdentifier * oi = &*obj;
+        EastboundObjectIdentifier * oi = &*obj;
         oi->incrementFrameCount(); // Update 'age' counter
 
         int lastSeen = forceAll ? 1000 : oi->getLastSeenNFramesAgo(); // if forceAll is set, set lastSeen artificially high for each object

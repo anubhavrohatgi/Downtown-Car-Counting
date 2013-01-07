@@ -1,9 +1,9 @@
-CPPFLAGS=-I/usr/local/include/opencv/
+CPPFLAGS=-I/usr/local/include/opencv/ -g
 LDFLAGS=
 LDLIBS=-lvlc -lcvblob -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video
 
 CarCount: main.o NetworkStream.o ImageProcessor.o DataSourceManager.o CarCounter.o ObjectIdentifier.o
-	g++ $(LDFLAGS) -o CarCount main.o NetworkStream.o ImageProcessor.o DataSourceManager.o CarCounter.o ObjectIdentifier.o $(LDLIBS) 
+	g++ $(LDFLAGS) $(CPPFLAGS) -o CarCount main.o NetworkStream.o ImageProcessor.o DataSourceManager.o CarCounter.o ObjectIdentifier.o EastboundObjectIdentifier.o $(LDLIBS) 
 
 main.o: main.cpp
 	g++ $(CPPFLAGS) -c main.cpp
@@ -22,6 +22,9 @@ CarCounter.o: CarCounter.h CarCounter.cpp
 
 ObjectIdentifier.o: ObjectIdentifier.h ObjectIdentifier.cpp
 	g++ $(CPPFLAGS) -c ObjectIdentifier.cpp
-
+	
+EastboundObjectIdentifier.o: EastboundObjectIdentifier.h EastboundObjectIdentifier.cpp
+	g++ $(CPPFLAGS) -c EastboundObjectIdentifier.cpp
+	
 clean:
 	rm CarCount *.o
