@@ -87,14 +87,14 @@ int ObjectIdentifier::getFirstTime()
     return (blobs.at(0).time);
 }
 
-long ObjectIdentifier::lifetime()
+long ObjectIdentifier::getLifetime()
 {
     return (lastBlob.time - blobs.at(0).time);
 }
 
 double ObjectIdentifier::getSpeed()
 {
-    double speed = (lifetime() > 0 ? distanceTravelled() / lifetime() : 0);
+    double speed = (getLifetime() > 0 ? distanceTravelled() / getLifetime() : 0);
     return speed;
 }
 

@@ -21,6 +21,8 @@ public:
 
     long lastSeen();
 
+    virtual long getTimeout() = 0;
+
     // Returns true if blob was accepted, false if not
     virtual bool addBlob(Blob b);
 
@@ -36,7 +38,7 @@ public:
 
     int getId();
 
-    long lifetime();
+    long getLifetime();
 
     int getFirstTime();
 

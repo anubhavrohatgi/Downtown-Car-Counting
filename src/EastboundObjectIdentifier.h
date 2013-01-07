@@ -16,6 +16,10 @@ public:
     // Returns fitness on scale of 0 - 100
     virtual int getFit(Blob b);
 
+    virtual long getTimeout() {
+        return 10000;
+    }
+
     // Returns true if blob is in eastbound traffic lanes
     static bool isInRange(Blob b);
 

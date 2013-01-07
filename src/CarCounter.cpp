@@ -151,54 +151,29 @@ int CarCounter::updateStats(vector<Blob>& blobs, long currentTime) {
 
 int CarCounter::classifyObjects(bool forceAll)
 {
-    int newROs = 0;
+    int newlyClassified = 0;
     // Iterate through ObjectIdentifiers and see if we can classify (or discard) them
     for (list<EastboundObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
-
         EastboundObjectIdentifier * oi = &*obj;
+        long lastSeen = forceAll ? std::numeric_limits<long>::max() : oi->lastSeen();
 
-        int lastSeen = forceAll ? 1000 : oi->lastSeen(); // if forceAll is set, set lastSeen artificially high for each object
-        double distanceTravelled = oi->distanceTravelled();
-        int numBlobs = oi->getNumBlobs();
-
-        if (lastSeen > 10 || (oi->lifetime() > 30 && oi->getSpeed() < 2)) { // TODO: Use CONSTS note: lifetime depends on FPS
-            if (numBlobs >= 8) {
-                if (oi->inEndZone()) {
-                    carCount++;
-                    obj = objects.erase(obj);
-                    newROs++;
-                    printf("END ZONE CAR: %d speed %f\n", (int)distanceTravelled, oi->getSpeed());
-                    printf("ID %d, %d pts  txR  %f  tyR  %f  xyR  %f  Sum: %f\n", oi->getId(), oi->getNumBlobs(), oi->txR, oi->tyR, oi->xyR, oi->txR + oi->tyR + oi->xyR);
-                    //oi->printPoints();
-                } else if (oi->distanceTravelled() > 150) { // TODO: use consts, note: normal distance is about ~300
-                    carCount++;
-                    obj = objects.erase(obj);
-                    newROs++;
-                    printf("DISTANCE CAR: %d speed %f\n", (int)distanceTravelled, oi->getSpeed());
-                    printf("ID %d, %d pts  txR  %f  tyR  %f  xyR  %f  Sum: %f\n", oi->getId(), oi->getNumBlobs(), oi->txR, oi->tyR, oi->xyR, oi->txR + oi->tyR + oi->xyR);
-                    //oi->printPoints();
-                } else {
-                    // Discard identifier
-                    printf("DISCARDED CAR numBlobs %d dist %d speed %f\n", numBlobs, (int)distanceTravelled, oi->getSpeed());
-                    printf("ID %d, %d pts  txR  %f  tyR  %f  xyR  %f  Sum: %f\n", oi->getId(), oi->getNumBlobs(), oi->txR, oi->tyR, oi->xyR, oi->txR + oi->tyR + oi->xyR);
-                    //obj->printPoints();
-                    obj = objects.erase(obj);
-                }
-            } else {
-                // Discard identifier
-                printf("DISCARDED CAR numBlobs %d lastSeen %d dist %d speed %f\n", numBlobs, lastSeen, (int)distanceTravelled, oi->getSpeed());
-                printf("ID %d, %d pts  txR  %f  tyR  %f  xyR  %f  Sum: %f\n", oi->getId(), oi->getNumBlobs(), oi->txR, oi->tyR, oi->xyR, oi->txR + oi->tyR + oi->xyR);
-                //obj->printPoints();
-                obj = objects.erase(obj);
+        if (lastSeen > oi->getTimeout()) {
+            // Object has timed out
+            if (oi->getType() != EastboundObjectIdentifier::UNKNOWN) {
+                printf("OBJECT IDENTIFIED - type %d\n", oi->getType());
+                printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->distanceTravelled());
+                newlyClassified++;
             }
+            obj = objects.erase(obj);
         }
     }
 
     // Log old blobs to file
+    // TODO: better way to do memory mgmt
     if (allBlobs.size() > 500) {
         blobsToLogAndRemove(300);
     }
-    return newROs;
+    return newlyClassified;
 }
 
 void CarCounter::blobsToLogAndRemove(int numBlobs)
