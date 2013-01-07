@@ -103,6 +103,10 @@ int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
                 printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
                 newlyClassified++;
             }
+            std::vector<Blob*>& blobs = oi->getBlobs();
+            for (int i = 0; i < blobs.size(); i++) {
+                logBlob(*blobs.at(i));
+            }
             delete oi;
             eastboundObjects.erase(iterator++);
         } else {
@@ -125,6 +129,10 @@ int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
                 printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
                 newlyClassified++;
             }
+            std::vector<Blob*>& blobs = oi->getBlobs();
+            for (int i = 0; i < blobs.size(); i++) {
+                logBlob(*blobs.at(i));
+            }
             delete oi;
             westboundObjects.erase(iterator++);
         } else {
@@ -137,6 +145,7 @@ int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
 
 void CarCounter::logBlob(Blob& b)
 {
+    // TODO: store frameNum and blob dimensions?
     char buf[120];
     if (writesToLog == 0) {
         // Create header and legend

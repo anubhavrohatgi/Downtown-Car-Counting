@@ -37,10 +37,13 @@ int WestboundObjectIdentifier::getFit(Blob& b)
         printf("Best fit accepted\n");
 #endif
     } else {
+        // These 3 contribute 200 / 300 possible score
         int xyScore = 100 - (toPredictedXY < 100 ? toPredictedXY : 100);
         int txScore = 100 - (toPredictedTX < 100 ? toPredictedTX : 100);
         int tyScore = 100 - (toPredictedTY < 100 ? toPredictedTY : 100);
-        score = xyScore + txScore + tyScore - 100;
+        // Contributes up to 100
+        int linearityScore = (e <= 25) ? (25 - e) * 4 : 0;
+        score = (xyScore + txScore + tyScore - 100) + linearityScore;
     }
     printf("Score %d\n", score);
     return score;

@@ -265,10 +265,10 @@ double ObjectIdentifier::distanceBetweenBlobs(Blob& b1, Blob& b2)
     return distance(b1.x, b1.y, b2.x, b2.y);
 }
 
-#if 0
-vector<Blob> * ObjectIdentifier::getBlobs()
+#if 1
+vector<Blob*>& ObjectIdentifier::getBlobs()
 {
-    return &blobs;
+    return blobs;
 }
 #endif
 

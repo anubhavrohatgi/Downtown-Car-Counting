@@ -27,6 +27,8 @@ public:
 
     void printPoints();
 
+
+
     double getDistanceTravelled();
 
     int getNumBlobs();
@@ -46,6 +48,8 @@ public:
 
     virtual ObjectType getType() = 0;
 
+    std::vector<Blob*>& getBlobs();
+
 protected:
     double errFromLine(Blob& b);
     double distanceFromLastBlob(Blob& b);
@@ -61,7 +65,6 @@ protected:
     double getSpeed();
 
     bool inEndZone();
-    std::vector<Blob*> * getBlobs();
 
     double errXY(double x, double y);
     double errTX(long time, double x);
