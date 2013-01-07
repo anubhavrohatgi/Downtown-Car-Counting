@@ -26,7 +26,7 @@ public:
 
     int classifyObjects(bool forceAll);
 
-    int updateStats(std::vector<Blob>& blobs, long currentTime); //TODO: use timestamps instead?
+    int updateStats(std::vector<Blob*>& blobs, long currentTime); //TODO: use timestamps instead?
 
 private:
     ObjectIdentifier * getFit(Blob b, std::vector<ObjectIdentifier*> oi, long currentTime);
@@ -43,9 +43,9 @@ private:
 
     std::vector<EastboundObjectIdentifier*> eastboundObjects;
     std::vector<WestboundObjectIdentifier*> westboundObjects;
-    std::vector<Blob> unidentifiedBlobs;
+    std::vector<Blob*> unidentifiedBlobs;
 
-    std::vector<Blob> allBlobs;
+    std::vector<Blob*> allBlobs;
 
     int rosCreated;
 

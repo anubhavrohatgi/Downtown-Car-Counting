@@ -6,13 +6,13 @@
 using namespace std;
 using namespace cv;
 
-EastboundObjectIdentifier::EastboundObjectIdentifier(Blob b) :
+EastboundObjectIdentifier::EastboundObjectIdentifier(Blob& b) :
         ObjectIdentifier(b)
 {
 
 }
 
-int EastboundObjectIdentifier::getFit(Blob b)
+int EastboundObjectIdentifier::getFit(Blob& b)
 {
     int score = 0;
 

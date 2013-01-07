@@ -159,10 +159,10 @@ int ImageProcessor::processFrame(Mat inFrame, long currentTime)
 
         printf("Blobs Size: %d\n", (int)cvBlobs.size());
         if (carCounter && cvBlobs.size() > 0) {
-            vector<Blob> blobs;
+            vector<Blob*> blobs;
             for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
                     CvBlob blob = *(it->second);
-                    Blob b(blob.centroid.x, blob.centroid.y, blob.area, currentTime);
+                    Blob* b = new Blob(blob.centroid.x, blob.centroid.y, blob.area, currentTime);
                     blobs.push_back(b);
             }
             carCounter->updateStats(blobs, currentTime);

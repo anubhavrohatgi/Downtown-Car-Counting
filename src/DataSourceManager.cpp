@@ -47,9 +47,8 @@ int DataSourceManager::processCsvFile(const char * path)
     // SUGGEST: Could process lines as they're read in if dealing with huge data
     printf("CSV Rows: %d\n", (int)array.size());
 
-    // Map of blobs
     // We store them per frame so that they can be processed per frame like they would be if generated from a video
-    vector<Blob> blobs;
+    vector<Blob*> blobs;
     long lastTime = -1;
 
     for (int i = 0; i < array.size(); i++)
@@ -62,7 +61,7 @@ int DataSourceManager::processCsvFile(const char * path)
             double area = atoi(array[i][3].c_str());
 
             if (area != 4000 && x > 0 && y > 0) { // Hack, using area = 4000 as a legend when graphing in R
-                Blob b(x, y, area, time);
+                Blob* b = new Blob(x, y, area, time);
                 if (lastTime == -1) {
                     lastTime = time;
                 }

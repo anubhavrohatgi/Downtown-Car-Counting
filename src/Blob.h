@@ -4,8 +4,6 @@
 class Blob {
 
 public:
-    Blob() { }
-
     Blob(double x, double y, double area, long time) :
         x(x),
         y(y),

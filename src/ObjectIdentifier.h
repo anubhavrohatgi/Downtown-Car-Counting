@@ -10,12 +10,12 @@ static int globalID = 1;
 class ObjectIdentifier {
 
 public:
-    ObjectIdentifier(Blob b);
+    ObjectIdentifier(Blob& b);
 
     ~ObjectIdentifier();
 
     // Returns fitness score. Higher is better.
-    virtual int getFit(Blob b) = 0;
+    virtual int getFit(Blob& b) = 0;
 
     void updateTime(long currentTime);
 
@@ -23,8 +23,7 @@ public:
 
     virtual long getTimeout() = 0;
 
-    // Returns true if blob was accepted, false if not
-    virtual bool addBlob(Blob b);
+    virtual bool addBlob(Blob& b);
 
     void printPoints();
 
@@ -48,10 +47,10 @@ public:
     virtual ObjectType getType() = 0;
 
 protected:
-    double errFromLine(Blob b);
-    double distanceFromLastBlob(Blob b);
+    double errFromLine(Blob& b);
+    double distanceFromLastBlob(Blob& b);
 
-    Blob getLastBlob();
+    Blob& getLastBlob();
 
     int getFirstTime();
 
@@ -61,10 +60,8 @@ protected:
     // Returned in pixels per millisecond
     double getSpeed();
 
-    virtual bool inRange(Blob b);
-    virtual double distFromExpectedPath(Blob b);
     bool inEndZone();
-    std::vector<Blob> * getBlobs();
+    std::vector<Blob*> * getBlobs();
 
     double errXY(double x, double y);
     double errTX(long time, double x);
@@ -99,22 +96,22 @@ private:
 
     double distance(double x1, double x2, double y1, double y2);
 
-    std::pair<double,double> xyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
-    std::pair<double,double> txLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
-    std::pair<double,double> tyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
+    std::pair<double,double> xyLeastSqrRegression(std::vector<Blob*> &blobs, int numPointsToUse);
+    std::pair<double,double> txLeastSqrRegression(std::vector<Blob*> &blobs, int numPointsToUse);
+    std::pair<double,double> tyLeastSqrRegression(std::vector<Blob*> &blobs, int numPointsToUse);
 
     long currentTime;
     long startTime;
     int frameCount;
-    Blob lastBlob;
+    Blob& lastBlob;
 
-    Blob closestBlob;
+    Blob& closestBlob;
     double closestDistToOrigin;
 
-    Blob furthestBlob;
+    Blob& furthestBlob;
     double furthestDistToOrigin;
 
-    std::vector<Blob> blobs;
+    std::vector<Blob*> blobs;
     int numBlobs;
 
     // Experimental

@@ -9,12 +9,12 @@
 class WestboundObjectIdentifier: public ObjectIdentifier {
 
 public:
-    WestboundObjectIdentifier(Blob b);
+    WestboundObjectIdentifier(Blob& b);
 
     ~WestboundObjectIdentifier();
 
     // Returns fitness on scale of 0 - 100
-    virtual int getFit(Blob b);
+    virtual int getFit(Blob& b);
 
     virtual long getTimeout() {
         return 60*1000;
@@ -22,12 +22,12 @@ public:
 
     virtual ObjectIdentifier::ObjectType getType();
 
-    static bool inStartingZone(Blob b) {
+    static bool inStartingZone(Blob& b) {
         return (b.x >= 290 && b.x <= 340 && b.y >= 75 && b.y <= 100);
     }
 
     // Returns true if blob is in Westbound traffic lanes
-    static bool isInRange(Blob b) {
+    static bool isInRange(Blob& b) {
         double yCalc = 31 * b.x / 163 + (10442/163);
         return (b.y < yCalc);
     }

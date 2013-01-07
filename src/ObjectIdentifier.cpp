@@ -6,13 +6,14 @@
 using namespace std;
 using namespace cv;
 
-ObjectIdentifier::ObjectIdentifier(Blob b) :
+ObjectIdentifier::ObjectIdentifier(Blob& b) :
     frameCount(0),
     id(1 + (globalID++ % 8)),
     closestDistToOrigin(999999), // TODO: maxint
     furthestDistToOrigin(0),
     closestBlob(b),
     furthestBlob(b),
+    lastBlob(b),
     numBlobs(0),
     currentTime(b.time),
     startTime(b.time),
@@ -60,6 +61,9 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
 
 ObjectIdentifier::~ObjectIdentifier()
 {
+    for (int i = 0; i < blobs.size(); i++) {
+        delete blobs.at(i);
+    }
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
     // TODO: why can't I delete these ?
     //delete &xyFilter;
@@ -75,7 +79,7 @@ void ObjectIdentifier::updateTime(long currentTime)
 
 long ObjectIdentifier::lastSeen()
 {
-    return (currentTime - blobs.at(blobs.size() - 1).time);
+    return (currentTime - blobs.at(blobs.size() - 1)->time);
 }
 
 int ObjectIdentifier::getNumBlobs()
@@ -85,7 +89,7 @@ int ObjectIdentifier::getNumBlobs()
 
 int ObjectIdentifier::getFirstTime()
 {
-    return (blobs.at(0).time);
+    return (blobs.at(0)->time);
 }
 
 long ObjectIdentifier::getLifetime()
@@ -99,11 +103,11 @@ double ObjectIdentifier::getSpeed()
     return speed;
 }
 
-bool ObjectIdentifier::addBlob(Blob b)
+bool ObjectIdentifier::addBlob(Blob& b)
 {
     numBlobs++;
     lastBlob = b;
-    blobs.push_back(b);
+    blobs.push_back(&b);
 
     // Keep track of closest and furthest blobs from origin
     double distanceToOrigin = distance(b.x, b.y, 0, 0);
@@ -138,48 +142,14 @@ bool ObjectIdentifier::addBlob(Blob b)
 void ObjectIdentifier::printPoints()
 {
     for (int i = 0; i < blobs.size(); i++) {
-        printf("%ld,%f,%f,%d,%d\n", blobs.at(i).time, blobs.at(i).x, blobs.at(i).y, (int)blobs.at(i).area, id);
+        Blob& b = *blobs.at(i);
+        printf("%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, id);
     }
 }
 
 double ObjectIdentifier::getDistanceTravelled()
 {
     return distanceBetweenBlobs(furthestBlob, closestBlob);
-}
-
-double ObjectIdentifier::getXMovement()
-{
-    double lastX = blobs.at(0).x;
-    double xMovement = 0;
-    for (int i = 1; i < blobs.size(); i++) {
-        xMovement += (blobs.at(i).x - lastX);
-        lastX = blobs.at(i).x;
-    }
-    return xMovement;
-}
-
-double ObjectIdentifier::getYMovement()
-{
-    double lastY = blobs.at(0).y;
-    double yMovement = 0;
-    for (int i = 1; i < blobs.size(); i++) {
-        yMovement += (blobs.at(i).y - lastY);
-        lastY = blobs.at(i).y;
-    }
-    return yMovement;
-}
-
-double ObjectIdentifier::errFromLine(Blob b)
-{
-    if (blobs.size()  < 2) {
-        return std::numeric_limits<int>::max(); // MAX_INT
-    }
-
-    pair<double,double> line = xyLeastSqrRegression(blobs, blobs.size());
-    double slope = line.first;
-    double y_int = line.second;
-    double y_exp = slope * b.x + y_int;
-    return distance(b.x, b.y, b.x, y_exp);
 }
 
 double ObjectIdentifier::errXY(double x, double y)
@@ -279,7 +249,7 @@ double ObjectIdentifier::distToPredictedTY(long time, double y)
     return distance(time, y, prediction.at<float>(0), prediction.at<float>(1));
 }
 
-Blob ObjectIdentifier::getLastBlob()
+Blob& ObjectIdentifier::getLastBlob()
 {
     return lastBlob;
 }
@@ -307,27 +277,12 @@ double ObjectIdentifier::distance(double x1, double y1, double x2, double y2)
     return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
-bool ObjectIdentifier::inRange(Blob b)
-{
-    // TODO: CONTS for these and override for EastboundObjectDetector
-    //printf("inRange BLOB %f, %f   LAST_BLOB %f,%f\n", b.x, b.y, lastBlob.x, lastBlob.y);
-    if (b.x <= lastBlob.x &&
-            (lastBlob.x - b.x < 25)) {
-        // New point is left of the last blob
-        return true;
-    } else if (lastBlob.x - b.x <= 75) {
-        // New point is right of the last blob
-        return true;
-    }
-    return false;
-}
-
 // TODO: store this calculation
 double ObjectIdentifier::getAverageSize()
 {
     int sizeSum = 0;
     for (int i = 0; i < blobs.size(); i++) {
-        sizeSum += blobs.at(i).area;
+        sizeSum += blobs.at(i)->area;
     }
     return (sizeSum / blobs.size());
 }
@@ -348,16 +303,7 @@ double ObjectIdentifier::expectedY(double x)
     return y_exp;
 }
 
-double ObjectIdentifier::distFromExpectedPath(Blob b)
-{
-    // TODO: CONTST for these and override for EastboundObjectDetector
-    double slope = 0.185;
-    double y_int = 270;
-    double y_exp = slope * b.x + y_int; // TODO: Remove code duplication
-    return distance(b.x, b.y, b.x, y_exp);
-}
-
-double ObjectIdentifier::distanceFromLastBlob(Blob b)
+double ObjectIdentifier::distanceFromLastBlob(Blob& b)
 {
     return distanceBetweenBlobs(lastBlob, b);
 }
@@ -366,7 +312,7 @@ double ObjectIdentifier::distanceFromLastBlob(Blob b)
 
 // HELPER FUNCTION
 
-pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse)
+pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob*>& blobs, int numPointsToUse)
 {
    double SUMx = 0;     //sum of x values
    double SUMy = 0;     //sum of y values
@@ -388,13 +334,13 @@ pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //sum of x
-      SUMx = SUMx + blobs.at(blobs.size() - 1 - i).time;
+      SUMx = SUMx + blobs.at(blobs.size() - 1 - i)->time;
       //sum of y
-      SUMy = SUMy + blobs.at(blobs.size() - 1 - i).x;
+      SUMy = SUMy + blobs.at(blobs.size() - 1 - i)->x;
       //sum of squared x*y
-      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).time * blobs.at(blobs.size() - 1 - i).x;
+      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i)->time * blobs.at(blobs.size() - 1 - i)->x;
       //sum of squared x
-      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i).time * blobs.at(blobs.size() - 1 - i).time;
+      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i)->time * blobs.at(blobs.size() - 1 - i)->time;
    }
 
    //calculate the means of x and y
@@ -421,19 +367,19 @@ pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //current (y_i - a0 - a1 * x_i)^2
-      Yres = pow((blobs.at(blobs.size() - 1 - i).x - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).time)), 2);
+      Yres = pow((blobs.at(blobs.size() - 1 - i)->x - y_intercept - (slope * blobs.at(blobs.size() - 1 - i)->time)), 2);
 
       //sum of (y_i - a0 - a1 * x_i)^2
       SUM_Yres += Yres;
 
       //current residue squared (y_i - AVGy)^2
-      res = pow(blobs.at(blobs.size() - 1 - i).x - AVGy, 2);
+      res = pow(blobs.at(blobs.size() - 1 - i)->x - AVGy, 2);
 
       //sum of squared residues
       SUMres += res;
 #if 0
       printf ("   (%0.2f %0.2f)      %0.5E         %0.5E\n",
-       blobs.at(blobs.size() - 1 - i).currentTime, blobs.at(blobs.size() - 1 - i).x, res, Yres);
+       blobs.at(blobs.size() - 1 - i)->currentTime, blobs.at(blobs.size() - 1 - i)->x, res, Yres);
 #endif
    }
 
@@ -453,7 +399,7 @@ pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, 
    return result;
 }
 
-pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse)
+pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob*> &blobs, int numPointsToUse)
 {
    double SUMx = 0;     //sum of x values
    double SUMy = 0;     //sum of y values
@@ -475,13 +421,13 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //sum of x
-      SUMx = SUMx + blobs.at(blobs.size() - 1 - i).time;
+      SUMx = SUMx + blobs.at(blobs.size() - 1 - i)->time;
       //sum of y
-      SUMy = SUMy + blobs.at(blobs.size() - 1 - i).y;
+      SUMy = SUMy + blobs.at(blobs.size() - 1 - i)->y;
       //sum of squared x*y
-      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).time * blobs.at(blobs.size() - 1 - i).y;
+      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i)->time * blobs.at(blobs.size() - 1 - i)->y;
       //sum of squared x
-      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i).time * blobs.at(blobs.size() - 1 - i).time;
+      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i)->time * blobs.at(blobs.size() - 1 - i)->time;
    }
 
    //calculate the means of x and y
@@ -508,19 +454,19 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //current (y_i - a0 - a1 * x_i)^2
-      Yres = pow((blobs.at(blobs.size() - 1 - i).y - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).time)), 2);
+      Yres = pow((blobs.at(blobs.size() - 1 - i)->y - y_intercept - (slope * blobs.at(blobs.size() - 1 - i)->time)), 2);
 
       //sum of (y_i - a0 - a1 * x_i)^2
       SUM_Yres += Yres;
 
       //current residue squared (y_i - AVGy)^2
-      res = pow(blobs.at(blobs.size() - 1 - i).y - AVGy, 2);
+      res = pow(blobs.at(blobs.size() - 1 - i)->y - AVGy, 2);
 
       //sum of squared residues
       SUMres += res;
 #if 0
       printf ("   (%0.2f %0.2f)      %0.5E         %0.5E\n",
-       blobs.at(blobs.size() - 1 - i).currentTime, blobs.at(blobs.size() - 1 - i).y, res, Yres);
+       blobs.at(blobs.size() - 1 - i)->currentTime, blobs.at(blobs.size() - 1 - i)->y, res, Yres);
 #endif
    }
 
@@ -540,7 +486,7 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
    return result;
 }
 
-pair<double,double> ObjectIdentifier::xyLeastSqrRegression(vector<Blob> &blobs, int numPointsToUse)
+pair<double,double> ObjectIdentifier::xyLeastSqrRegression(vector<Blob*> &blobs, int numPointsToUse)
 {
    double SUMx = 0;     //sum of x values
    double SUMy = 0;     //sum of y values
@@ -561,14 +507,15 @@ pair<double,double> ObjectIdentifier::xyLeastSqrRegression(vector<Blob> &blobs, 
    //calculate various sums
    for (int i = 0; i < numPointsToUse; i++)
    {
+      Blob& blob = *blobs.at(blobs.size() - 1 - i);
       //sum of x
-      SUMx = SUMx + blobs.at(blobs.size() - 1 - i).x;
+      SUMx = SUMx + blob.x;
       //sum of y
-      SUMy = SUMy + blobs.at(blobs.size() - 1 - i).y;
+      SUMy = SUMy + blob.y;
       //sum of squared x*y
-      SUMxy = SUMxy + blobs.at(blobs.size() - 1 - i).x * blobs.at(blobs.size() - 1 - i).y;
+      SUMxy = SUMxy + blob.x * blob.y;
       //sum of squared x
-      SUMxx = SUMxx + blobs.at(blobs.size() - 1 - i).x * blobs.at(blobs.size() - 1 - i).x;
+      SUMxx = SUMxx + blob.x * blob.x;
    }
 
    //calculate the means of x and y
@@ -595,19 +542,19 @@ pair<double,double> ObjectIdentifier::xyLeastSqrRegression(vector<Blob> &blobs, 
    for (int i = 0; i < numPointsToUse; i++)
    {
       //current (y_i - a0 - a1 * x_i)^2
-      Yres = pow((blobs.at(blobs.size() - 1 - i).y - y_intercept - (slope * blobs.at(blobs.size() - 1 - i).x)), 2);
+      Yres = pow((blobs.at(blobs.size() - 1 - i)->y - y_intercept - (slope * blobs.at(blobs.size() - 1 - i)->x)), 2);
 
       //sum of (y_i - a0 - a1 * x_i)^2
       SUM_Yres += Yres;
 
       //current residue squared (y_i - AVGy)^2
-      res = pow(blobs.at(blobs.size() - 1 - i).y - AVGy, 2);
+      res = pow(blobs.at(blobs.size() - 1 - i)->y - AVGy, 2);
 
       //sum of squared residues
       SUMres += res;
 #if 0
       printf ("   (%0.2f %0.2f)      %0.5E         %0.5E\n",
-       blobs.at(blobs.size() - 1 - i).x, blobs.at(blobs.size() - 1 - i).y, res, Yres);
+       blobs.at(blobs.size() - 1 - i)->x, blobs.at(blobs.size() - 1 - i)->y, res, Yres);
 #endif
    }
 

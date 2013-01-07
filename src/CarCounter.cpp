@@ -19,18 +19,22 @@ CarCounter::~CarCounter()
     // Log all remaining blobs
     classifyObjects(true);
     blobsToLogAndRemove(allBlobs.size());
+
+    for (int i = 0; i < unidentifiedBlobs.size(); i++) {
+        delete unidentifiedBlobs.at(i);
+    }
 }
 
-int CarCounter::updateStats(vector<Blob>& blobs, long currentTime) {
+int CarCounter::updateStats(vector<Blob*>& blobs, long currentTime) {
     int numBlobs = blobs.size();
-    if (numBlobs > 0) printf("Time %ld\n", blobs.front().time);
+    if (numBlobs > 0) printf("Time %ld\n", blobs.front()->time);
 
     // Determine the best fit for each blob
     for (unsigned int i = 0; i < blobs.size(); i++) {
-        Blob blob = blobs.at(i);
+        Blob& blob = *blobs.at(i);
         ObjectIdentifier * bestFit = NULL;
         int bestFitRecorded = 0;
-printf("SIZE %d\n", westboundObjects.size());
+
         if (EastboundObjectIdentifier::isInRange(blob)) {
             for (int i = 0; i < eastboundObjects.size(); i++) {
                 EastboundObjectIdentifier * oi = eastboundObjects.at(i);
@@ -74,12 +78,11 @@ printf("SIZE %d\n", westboundObjects.size());
         } else {
             // Not sure what this is
             blob.setClusterId(1); // 1 = UNKNOWN
-            unidentifiedBlobs.push_back(blob);
+            unidentifiedBlobs.push_back(&blob);
             printf("UNIDENTIFIED BLOB\n");
         }
-        allBlobs.push_back(blob);
+        allBlobs.push_back(&blob);
     }
-
     return classifyObjects(false);;
 }
 
@@ -124,7 +127,7 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
         // Create header and legend
         writeToLog("time,x,y,area,id\n"); // TODO: beef up logging
         for (int j = 1; j < 8; j++) {
-            Blob b = allBlobs.front();
+            Blob& b = *allBlobs.front();
             double x = b.x + 35 * j;
             sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, x, b.y, 4000, j);
             writeToLog(buf);
@@ -132,7 +135,7 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
     }
 
     for (int i = 0; i < allBlobs.size(); i++) {
-        Blob b = allBlobs.at(i);
+        Blob& b = *allBlobs.at(i);
         sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
         writeToLog(buf);
     }
