@@ -18,12 +18,15 @@ public:
         printf("Setting Crop x=%d y=%d w=%d h=%d\n", x, y, w, h);
     }
 
-    int processFrame(cv::Mat frame);
+    int processFrame(cv::Mat frame, long time);
 
     // Can only be set before processing begins
     void setShowFrames(bool d);
 
     void processVideoFile(const char * path);
+
+    // Returns time in ms  // TODO: put in utils class?
+    static long getTime();
 
     ~ImageProcessor();
 
@@ -35,9 +38,6 @@ private:
     CarCounter * carCounter;
     IplImage * labelImg;
     IplImage * dstImg;
-
-    // Returns time in ms
-    long getTime();
 
     cv::BackgroundSubtractorMOG2 bg_model;
 

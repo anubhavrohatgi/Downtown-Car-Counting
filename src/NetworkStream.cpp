@@ -27,7 +27,7 @@ static void unlock(void *data, void *id, void *const *p_pixels){
     uchar *pixels = (uchar*)*p_pixels;
     cv::Mat frame(ctx->image, false);// = Mat(orig, true);
     if (imProc) {
-        imProc->processFrame(frame);
+        imProc->processFrame(frame, ImageProcessor::getTime());
     } else {
         printf("No IMG proc\n");
     }

@@ -60,8 +60,13 @@ int DataSourceManager::processCsvFile(const char * path)
             double x = atof(array[i][1].c_str());
             double y = atof(array[i][2].c_str());
             double area = atoi(array[i][3].c_str());
+            long time = frameNum;
+            if (array[i].size() >= 5) {
+                time = atoi(array[i][4].c_str());
+            }
             if (area != 4000) { // Hack, using area = 4000 as a legend when graphing in R
-                Blob b(x, y, area, frameNum); // TODO: proper memory mgmt
+
+                Blob b(x, y, area, frameNum, time);
                 if (lastFrameNum == -1) {
                     lastFrameNum = frameNum;
                 }

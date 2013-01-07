@@ -6,19 +6,21 @@ class Blob {
 public:
     Blob() { }
 
-    Blob(double x, double y, double area, int frameNumber) :
+    Blob(double x, double y, double area, int frameNumber, long time) :
         x(x),
         y(y),
         area(area),
-        frameNum(frameNumber)
+        frameNum(frameNumber),
+        time(time)
     {
 
     }
 
-    Blob(double x, double y, int frameNumber) :
+    Blob(double x, double y, int frameNumber, long time) :
         x(x),
         y(y),
-        frameNum(frameNumber)
+        frameNum(frameNumber),
+        time(time)
     {
 
     }
@@ -39,7 +41,7 @@ public:
     double y;
     double area;
     int frameNum;
-
+    long time;
 private:
     int clusterId;
 };
