@@ -1,6 +1,8 @@
 #ifndef _BLOB_H_
 #define _BLOB_H_
 
+#include <stdio.h>
+static int blobsAlive = 0;
 class Blob {
 
 public:
@@ -10,7 +12,8 @@ public:
         area(area),
         time(time)
     {
-
+        blobsAlive++;
+        printf("Blobs Alive %d\n", blobsAlive);
     }
 
     void setClusterId(int id) {
@@ -22,7 +25,8 @@ public:
     }
 
     ~Blob() {
-
+        blobsAlive--;
+        printf("Blobs Alive %d\n", blobsAlive);
     }
 
     double x;

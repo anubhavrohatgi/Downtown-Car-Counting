@@ -19,8 +19,10 @@ CarCounter::~CarCounter()
     // Log all remaining blobs
     classifyObjects(true);
     blobsToLogAndRemove(allBlobs.size());
+    printf("EBO Size %d\n", eastboundObjects.size());
 
-    for (int i = 0; i < unidentifiedBlobs.size(); i++) {
+    printf("WBO Size %d\n", westboundObjects.size());
+for (int i = 0; i < unidentifiedBlobs.size(); i++) {
         //delete unidentifiedBlobs.at(i);
     }
 }
@@ -33,26 +35,10 @@ int CarCounter::updateStats(vector<Blob*>& blobs, long currentTime) {
     for (unsigned int i = 0; i < blobs.size(); i++) {
         Blob& blob = *blobs.at(i);
         ObjectIdentifier * bestFit = NULL;
-        int bestFitRecorded = 0;
-
-        if (EastboundObjectIdentifier::isInRange(blob)) {
-            for (int i = 0; i < eastboundObjects.size(); i++) {
-                EastboundObjectIdentifier * oi = eastboundObjects.at(i);
-                int fit = oi->getFit(blob);
-                if (fit > bestFitRecorded) {
-                    bestFit = oi;
-                    bestFitRecorded = fit;
-                }
-            }
+        if(EastboundObjectIdentifier::isInRange(blob)) {
+            bestFit = findBestFit(blob, eastboundObjects, currentTime);
         } else if (WestboundObjectIdentifier::isInRange(blob)) {
-            for (int i = 0; i < westboundObjects.size(); i++) {
-                WestboundObjectIdentifier * oi = westboundObjects.at(i);
-                int fit = oi->getFit(blob);
-                if (fit > bestFitRecorded) {
-                    bestFit = oi;
-                    bestFitRecorded = fit;
-                }
-            }
+            bestFit = findBestFit(blob, westboundObjects, currentTime);
         }
 
         if (bestFit) {
@@ -63,20 +49,19 @@ int CarCounter::updateStats(vector<Blob*>& blobs, long currentTime) {
             printf("ADD TO OBJ %d\n", id);
         } else if (EastboundObjectIdentifier::inStartingZone(blob)) {
             // No suitable identifier exists, this may be a new object, create new identifier
-            EastboundObjectIdentifier * obj = new EastboundObjectIdentifier(blob); // TODO: use new and do memory mgmt
+            EastboundObjectIdentifier * obj = new EastboundObjectIdentifier(&blob); // TODO: use new and do memory mgmt
             int id = obj->getId();
             blob.setClusterId(id);
             eastboundObjects.push_back(obj);
             printf("NEW EAST OBJ %d\n", id);
         } else if (WestboundObjectIdentifier::inStartingZone(blob)) {
             // No suitable identifier exists, this may be a new object, create new identifier
-            WestboundObjectIdentifier * obj = new WestboundObjectIdentifier(blob); // TODO: use new and do memory mgmt
+            WestboundObjectIdentifier * obj = new WestboundObjectIdentifier(&blob); // TODO: use new and do memory mgmt
             int id = obj->getId();
             blob.setClusterId(id);
             westboundObjects.push_back(obj);
             printf("NEW WEST OBJ %d\n", id);
         } else {
-            // Not sure what this is
             blob.setClusterId(1); // 1 = UNKNOWN
             unidentifiedBlobs.push_back(&blob);
             printf("UNIDENTIFIED BLOB\n");
@@ -86,14 +71,30 @@ int CarCounter::updateStats(vector<Blob*>& blobs, long currentTime) {
     return classifyObjects(false);;
 }
 
+ObjectIdentifier* CarCounter::findBestFit(Blob& b, list<ObjectIdentifier*> objects, long currentTime)
+{
+    ObjectIdentifier* bestFit = NULL;
+    int bestFitRecorded = 0;
+
+    for (list<ObjectIdentifier*>::const_iterator iterator = objects.begin(), end = objects.end(); iterator != end; ++iterator) {
+        ObjectIdentifier* oi = *iterator;
+        int fit = oi->getFit(b);
+        if (fit > bestFitRecorded) {
+            bestFit = oi;
+            bestFitRecorded = fit;
+        }
+    }
+    return bestFit;
+}
+
 int CarCounter::classifyObjects(bool forceTimeout)
 {
     int newlyClassified = 0;
     // Iterate through ObjectIdentifiers and see if we can classify (or discard) them
-    for (int i = 0; i < eastboundObjects.size(); i++) {
-        EastboundObjectIdentifier * oi = eastboundObjects.at(i);
-        long lastSeen = forceTimeout ? std::numeric_limits<long>::max() : oi->lastSeen();
-
+    std::list<ObjectIdentifier*>::iterator iterator = eastboundObjects.begin();
+    while (iterator != eastboundObjects.end()) {
+        ObjectIdentifier * oi = *iterator;
+        long lastSeen = forceTimeout ? numeric_limits<long>::max() : oi->lastSeen();
         if (lastSeen > oi->getTimeout()) {
             // Object has timed out
             if (oi->getType() != ObjectIdentifier::UNKNOWN) {
@@ -101,14 +102,18 @@ int CarCounter::classifyObjects(bool forceTimeout)
                 printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
                 newlyClassified++;
             }
-            delete eastboundObjects.at(i);
+            delete oi;
+            eastboundObjects.erase(iterator++);
+        } else {
+            if (forceTimeout) assert(false);
+            iterator++;
         }
     }
 
-    for (int i = 0; i < westboundObjects.size(); i++) {
-        WestboundObjectIdentifier * oi = westboundObjects.at(i);
-        long lastSeen = forceTimeout ? std::numeric_limits<long>::max() : oi->lastSeen();
-
+    iterator = westboundObjects.begin();
+    while (iterator != westboundObjects.end()) {
+        ObjectIdentifier * oi = *iterator;
+        long lastSeen = forceTimeout ? numeric_limits<long>::max() : oi->lastSeen();
         if (lastSeen > oi->getTimeout()) {
             // Object has timed out
             if (oi->getType() != ObjectIdentifier::UNKNOWN) {
@@ -116,7 +121,11 @@ int CarCounter::classifyObjects(bool forceTimeout)
                 printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
                 newlyClassified++;
             }
-            delete westboundObjects.at(i);
+            delete oi;
+            westboundObjects.erase(iterator++);
+        } else {
+            if (forceTimeout) assert(false);
+            iterator++;
         }
     }
 
@@ -135,7 +144,7 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
     }
 
     if (numBlobs == 0) return;
-
+    printf("NUM BLOBS %d\n", numBlobs);
     char buf[120];
 
     if (writesToLog == 0) {

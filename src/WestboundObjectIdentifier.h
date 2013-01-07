@@ -9,7 +9,7 @@
 class WestboundObjectIdentifier: public ObjectIdentifier {
 
 public:
-    WestboundObjectIdentifier(Blob& b);
+    WestboundObjectIdentifier(Blob* b);
 
     ~WestboundObjectIdentifier();
 

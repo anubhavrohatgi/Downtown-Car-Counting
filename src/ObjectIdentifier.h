@@ -10,9 +10,9 @@ static int globalID = 1;
 class ObjectIdentifier {
 
 public:
-    ObjectIdentifier(Blob& b);
+    ObjectIdentifier(Blob* b);
 
-    ~ObjectIdentifier();
+    virtual ~ObjectIdentifier();
 
     // Returns fitness score. Higher is better.
     virtual int getFit(Blob& b) = 0;
@@ -90,7 +90,7 @@ protected:
 private:
     int id;
 
-    double distanceBetweenBlobs(Blob b1, Blob b2);
+    double distanceBetweenBlobs(Blob& b1, Blob& b2);
 
     double expectedY(double x);
 
@@ -103,12 +103,12 @@ private:
     long currentTime;
     long startTime;
     int frameCount;
-    Blob& lastBlob;
+    Blob* lastBlob;
 
-    Blob& closestBlob;
+    Blob* closestBlob;
     double closestDistToOrigin;
 
-    Blob& furthestBlob;
+    Blob* furthestBlob;
     double furthestDistToOrigin;
 
     std::vector<Blob*> blobs;

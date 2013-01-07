@@ -6,23 +6,24 @@
 using namespace std;
 using namespace cv;
 
-ObjectIdentifier::ObjectIdentifier(Blob& b) :
+ObjectIdentifier::ObjectIdentifier(Blob* blob) :
     frameCount(0),
     id(1 + (globalID++ % 8)),
     closestDistToOrigin(999999), // TODO: maxint
     furthestDistToOrigin(0),
-    closestBlob(b),
-    furthestBlob(b),
-    lastBlob(b),
+    closestBlob(blob),
+    furthestBlob(blob),
+    lastBlob(blob),
     numBlobs(0),
-    currentTime(b.time),
-    startTime(b.time),
+    currentTime(blob->time),
+    startTime(blob->time),
     xyFilter(*(new KalmanFilter(4,2,0))),
     txFilter(*(new KalmanFilter(4,2,0))),
     tyFilter(*(new KalmanFilter(4,2,0))),
     measurement(*(new cv::Mat_<float>(2,1))),
     type(UNKNOWN)
 {
+    Blob& b = *blob;
     xyFilter.statePre.at<float>(0) = b.x;
     xyFilter.statePre.at<float>(1) = b.y;
     xyFilter.statePre.at<float>(2) = 0;
@@ -66,10 +67,10 @@ ObjectIdentifier::~ObjectIdentifier()
     }
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
     // TODO: why can't I delete these ?
-    //delete &xyFilter;
-    //delete &txFilter;
-    //delete &tyFilter;
-    //delete &measurement;
+    delete &xyFilter;
+    delete &txFilter;
+    delete &tyFilter;
+    delete &measurement;
 }
 
 void ObjectIdentifier::updateTime(long currentTime)
@@ -106,19 +107,19 @@ double ObjectIdentifier::getSpeed()
 bool ObjectIdentifier::addBlob(Blob& b)
 {
     numBlobs++;
-    lastBlob = b;
+    lastBlob = &b;
     blobs.push_back(&b);
 
     // Keep track of closest and furthest blobs from origin
     double distanceToOrigin = distance(b.x, b.y, 0, 0);
 
     if (distanceToOrigin > furthestDistToOrigin) {
-        furthestBlob = b;
+        furthestBlob = &b;
         furthestDistToOrigin = distanceToOrigin;
     }
 
     if (distanceToOrigin < closestDistToOrigin) {
-        closestBlob = b;
+        closestBlob = &b;
         closestDistToOrigin = distanceToOrigin;
     }
 
@@ -149,7 +150,7 @@ void ObjectIdentifier::printPoints()
 
 double ObjectIdentifier::getDistanceTravelled()
 {
-    return distanceBetweenBlobs(furthestBlob, closestBlob);
+    return distanceBetweenBlobs(*furthestBlob, *closestBlob);
 }
 
 double ObjectIdentifier::errXY(double x, double y)
@@ -251,7 +252,7 @@ double ObjectIdentifier::distToPredictedTY(long time, double y)
 
 Blob& ObjectIdentifier::getLastBlob()
 {
-    return lastBlob;
+    return *lastBlob;
 }
 
 int ObjectIdentifier::getId()
@@ -259,7 +260,7 @@ int ObjectIdentifier::getId()
     return id;
 }
 
-double ObjectIdentifier::distanceBetweenBlobs(Blob b1, Blob b2)
+double ObjectIdentifier::distanceBetweenBlobs(Blob& b1, Blob& b2)
 {
     return distance(b1.x, b1.y, b2.x, b2.y);
 }
@@ -289,8 +290,8 @@ double ObjectIdentifier::getAverageSize()
 
 bool ObjectIdentifier::inEndZone()
 {
-    double x = furthestBlob.x;
-    double y = furthestBlob.y;
+    double x = furthestBlob->x;
+    double y = furthestBlob->y;
     return (x > 500 && y > 360);
 }
 
@@ -305,7 +306,7 @@ double ObjectIdentifier::expectedY(double x)
 
 double ObjectIdentifier::distanceFromLastBlob(Blob& b)
 {
-    return distanceBetweenBlobs(lastBlob, b);
+    return distanceBetweenBlobs(*lastBlob, b);
 }
 
 

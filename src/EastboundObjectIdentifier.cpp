@@ -6,7 +6,7 @@
 using namespace std;
 using namespace cv;
 
-EastboundObjectIdentifier::EastboundObjectIdentifier(Blob& b) :
+EastboundObjectIdentifier::EastboundObjectIdentifier(Blob* b) :
         ObjectIdentifier(b)
 {
 

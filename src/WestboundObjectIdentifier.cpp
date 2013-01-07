@@ -6,7 +6,7 @@
 using namespace std;
 using namespace cv;
 
-WestboundObjectIdentifier::WestboundObjectIdentifier(Blob& b) :
+WestboundObjectIdentifier::WestboundObjectIdentifier(Blob* b) :
         ObjectIdentifier(b)
 {
 

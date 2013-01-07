@@ -9,7 +9,7 @@
 class EastboundObjectIdentifier: public ObjectIdentifier {
 
 public:
-    EastboundObjectIdentifier(Blob& b);
+    EastboundObjectIdentifier(Blob* b);
 
     ~EastboundObjectIdentifier();
 
