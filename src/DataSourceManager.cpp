@@ -61,14 +61,14 @@ int DataSourceManager::processCsvFile(const char * path)
             double y = atof(array[i][2].c_str());
             double area = atoi(array[i][3].c_str());
 
-            if (area != 4000) { // Hack, using area = 4000 as a legend when graphing in R
+            if (area != 4000 && x > 0 && y > 0) { // Hack, using area = 4000 as a legend when graphing in R
                 Blob b(x, y, area, time);
                 if (lastTime == -1) {
                     lastTime = time;
                 }
 
                 // New frame in the log file, process blobs stored for last frame
-                if (time != lastTime) {
+                if (time != lastTime && blobs.size() > 0) {
                     counter.updateStats(blobs, lastTime);
                     blobs.clear();
                 }

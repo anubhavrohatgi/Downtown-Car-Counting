@@ -23,98 +23,32 @@ CarCounter::~CarCounter()
 
 int CarCounter::updateStats(vector<Blob>& blobs, long currentTime) {
     int numBlobs = blobs.size();
-    int numObjs = objects.size();
     if (numBlobs > 0) printf("Time %ld\n", blobs.front().time);
-    // Classify the Blobs as Probable Road Objects
-    for (int i = 0; i < blobs.size(); i++) {
 
+    // Determine the best fit for each blob
+    for (unsigned int i = 0; i < blobs.size(); i++) {
         Blob blob = blobs.at(i);
-        blob.time = currentTime;
-
         ObjectIdentifier * bestFit = NULL;
-        ObjectIdentifier * candidateFit = NULL; // Used if an identified blob is on the edge of our parameters
-
-        double minError = std::numeric_limits<double>::max(); //MAX_DOUBLE
-
-        printf("\nBlob for t %ld, (x,y) %f,%f\n", blob.time, blob.x, blob.y);
-        if (ObjectIdentifier::inStartingZone(blob)) {
-            printf("In starting zone\n");
-        } else {
-            printf("Not in starting zone\n");
-        }
-        for (list<EastboundObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
-
-            // Identifier we're testing
-            EastboundObjectIdentifier * oi = &*obj;
-            oi->updateTime(currentTime); // Update 'age' counter
-            int oiID = oi->getId();
-#if 1
-            double distToLast = oi->distanceFromLastBlob(blob);
-            double toPredictedXY = oi->distToPredictedXY(blob.x, blob.y);
-            double toPredictedTX = oi->distToPredictedTX(blob.time, blob.x);
-            double toPredictedTY = oi->distToPredictedTY(blob.time, blob.y);
-            double e1 = oi->errXY(blob.x, blob.y);
-            double e2 = oi->errTX(blob.time, blob.x);
-            double e3 = oi->errTY(blob.time, blob.y);
-            double e = sqrt(e1*e1 + e2*e2 + e3*e3);
-
-            printf("Predicted XY %f TX %f TY %f\n", toPredictedXY, toPredictedTX, toPredictedTY);
-            printf("ID %d XY %f TX %f TY %f   D %f      SumSq: %f\n", oiID, e1, e2, e3, oi->distanceFromLastBlob(blob), e);
-
-            if (oi->getNumBlobs() <= 5) {
-                if (distToLast < 30 && distToLast < minError) {
-                    minError = distToLast;
+        int bestFitRecorded = 0;
+printf("SIZE %d\n", westboundObjects.size());
+        if (EastboundObjectIdentifier::isInRange(blob)) {
+            for (int i = 0; i < eastboundObjects.size(); i++) {
+                EastboundObjectIdentifier * oi = eastboundObjects.at(i);
+                int fit = oi->getFit(blob);
+                if (fit > bestFitRecorded) {
                     bestFit = oi;
-                    printf("Best fit accepted\n");
+                    bestFitRecorded = fit;
                 }
-            } else if (e < 20 && e < minError) {
-                minError = e;
-                bestFit = oi;
-                printf("Best fit accepted\n");
-            } else if (toPredictedXY < 30 && toPredictedXY < minError) {
-                minError = toPredictedXY;
-                bestFit = oi;
-                printf("Best fit accepted\n");
             }
-
-#else
-            double x = blob.x;
-            if (oi->getNumBlobs() >= 2) {
-                double err1 = oi->distFromExpectedX(blob.x, blob.time);
-                double err2 = oi->distFromExpectedY(blob.x, blob.y);
-                double err3 = oi->distFromExpectedY(blob.y, (int)blob.time);
-                double err4 = oi->distToPredictedXY(blob.x, blob.y);
-                printf("OI %d Err from Predicted %f\n", oi->getId(), err4);
-                if (oi->inStartingZone(blob)) printf("IN STARTING ZONE\n");
-                double errold = err1 + err2 + err3;
-                double err = sqrt(err1 * err1 + err2 * err2 + err3 * err3);
-                double localmin = std::min(std::min(err1, err2), std::min(err2, err3));
-
-                double e1 = oi->errXY(blob.x, blob.y);
-                double e2 = oi->errTX(blob.time, blob.x);
-                double e3 = oi->errTY(blob.time, blob.y);
-                double e = sqrt(e1*e1 + e2*e2 + e3*e3);
-                double eold = e1 + e2 + e3;
-
-                if (e < minError) { // TODO: tune
-                    if (e < 50) {
-                        if (!oi->inStartingZone(blob) || (oi->inStartingZone(blob) && oi->distanceFromLastBlob(blob) < 50)) {
-                            minError = err;
-                            bestFit = oi;
-                        }
-                    } else if (!oi->inStartingZone(blob) && e2 < 20) { // minimum of all 3 errors
-                        //candidateFit = oi; // NOTE: this was a bad strategy.
-                    }
+        } else if (WestboundObjectIdentifier::isInRange(blob)) {
+            for (int i = 0; i < westboundObjects.size(); i++) {
+                WestboundObjectIdentifier * oi = westboundObjects.at(i);
+                int fit = oi->getFit(blob);
+                if (fit > bestFitRecorded) {
+                    bestFit = oi;
+                    bestFitRecorded = fit;
                 }
-                //printf("ID %d ERRs (x given t) %f (y given x) %f (y given t) %f D %f SumSq: %f\n", oiID, err1, err2, err3, oi->distanceFromLastBlob(blob), err);
-                printf("ID %d XY %f TX %f TY %f   D %f                                SumSq: %f\n", oiID, e1, e2, e3, oi->distanceFromLastBlob(blob), e);
-                printf("ID %d txR  %f  tyR  %f  xyR  %f  Sum: %f\n", oiID, oi->txR, oi->tyR, oi->xyR, oi->txR + oi->tyR + oi->xyR);
-                //inRange = oi->inRange(blob);
-            } else if (minError == std::numeric_limits<double>::max() &&
-                    oi->distanceFromLastBlob(blob) <= 15) {
-                bestFit = oi;
             }
-#endif
         }
 
         if (bestFit) {
@@ -123,48 +57,48 @@ int CarCounter::updateStats(vector<Blob>& blobs, long currentTime) {
             blob.setClusterId(id);
             bestFit->addBlob(blob);
             printf("ADD TO OBJ %d\n", id);
-        } else if (candidateFit) {
-            int id = candidateFit->getId();
+        } else if (EastboundObjectIdentifier::inStartingZone(blob)) {
+            // No suitable identifier exists, this may be a new object, create new identifier
+            EastboundObjectIdentifier * obj = new EastboundObjectIdentifier(blob); // TODO: use new and do memory mgmt
+            int id = obj->getId();
             blob.setClusterId(id);
-            candidateFit->addBlob(blob);
-            printf("ADD TO CANDIDATE OBJ %d\n", id);
-        } else if (ObjectIdentifier::inStartingZone(blob)) {
-            // No suitable identifier exists, this may be a new road object, create new identifier
-            EastboundObjectIdentifier obj(blob);
-            int id = obj.getId();
+            eastboundObjects.push_back(obj);
+            printf("NEW EAST OBJ %d\n", id);
+        } else if (WestboundObjectIdentifier::inStartingZone(blob)) {
+            // No suitable identifier exists, this may be a new object, create new identifier
+            WestboundObjectIdentifier * obj = new WestboundObjectIdentifier(blob); // TODO: use new and do memory mgmt
+            int id = obj->getId();
             blob.setClusterId(id);
-            objects.push_back(obj);
-            printf("NEW OBJ %d\n", id);
+            westboundObjects.push_back(obj);
+            printf("NEW WEST OBJ %d\n", id);
         } else {
             // Not sure what this is
-            blob.setClusterId(1);
+            blob.setClusterId(1); // 1 = UNKNOWN
             unidentifiedBlobs.push_back(blob);
             printf("UNIDENTIFIED BLOB\n");
         }
         allBlobs.push_back(blob);
     }
 
-    classifyObjects(false);
-
-    return 0;
+    return classifyObjects(false);;
 }
 
-int CarCounter::classifyObjects(bool forceAll)
+int CarCounter::classifyObjects(bool forceTimeout)
 {
     int newlyClassified = 0;
     // Iterate through ObjectIdentifiers and see if we can classify (or discard) them
-    for (list<EastboundObjectIdentifier>::iterator obj = objects.begin(); obj != objects.end(); obj++) {
-        EastboundObjectIdentifier * oi = &*obj;
-        long lastSeen = forceAll ? std::numeric_limits<long>::max() : oi->lastSeen();
+    for (int i = 0; i < eastboundObjects.size(); i++) {
+        EastboundObjectIdentifier * oi = eastboundObjects.at(i);
+        long lastSeen = forceTimeout ? std::numeric_limits<long>::max() : oi->lastSeen();
 
         if (lastSeen > oi->getTimeout()) {
             // Object has timed out
             if (oi->getType() != EastboundObjectIdentifier::UNKNOWN) {
                 printf("OBJECT IDENTIFIED - type %d\n", oi->getType());
-                printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->distanceTravelled());
+                printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
                 newlyClassified++;
             }
-            obj = objects.erase(obj);
+            // TODO: delete eastboundObjects.at(i);
         }
     }
 
@@ -191,14 +125,14 @@ void CarCounter::blobsToLogAndRemove(int numBlobs)
         writeToLog("time,x,y,area,id\n"); // TODO: beef up logging
         for (int j = 1; j < 8; j++) {
             Blob b = allBlobs.front();
-            sprintf(buf, "%ld,%f,%f,%d,%ld,%d\n", b.time, b.x + 35 * j, b.y, 4000, j);
+            double x = b.x + 35 * j;
+            sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, x, b.y, 4000, j);
             writeToLog(buf);
         }
     }
 
-    for (int i = 0; i < numBlobs; i++) {
-        Blob b = allBlobs.front();
-        allBlobs.pop_front();
+    for (int i = 0; i < allBlobs.size(); i++) {
+        Blob b = allBlobs.at(i);
         sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
         writeToLog(buf);
     }

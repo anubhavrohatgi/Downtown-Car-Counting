@@ -158,11 +158,11 @@ int ImageProcessor::processFrame(Mat inFrame, long currentTime)
         cvFilterByArea(cvBlobs, 100, 20000);
 
         printf("Blobs Size: %d\n", (int)cvBlobs.size());
-        if (carCounter) {
+        if (carCounter && cvBlobs.size() > 0) {
             vector<Blob> blobs;
             for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
                     CvBlob blob = *(it->second);
-                    Blob b(blob.centroid.x, blob.centroid.y, blob.area, frameCount, currentTime);
+                    Blob b(blob.centroid.x, blob.centroid.y, blob.area, currentTime);
                     blobs.push_back(b);
             }
             carCounter->updateStats(blobs, currentTime);

@@ -3,8 +3,9 @@
 
 #include "Blob.h"
 #include "EastboundObjectIdentifier.h"
+#include "WestboundObjectIdentifier.h"
 #include "opencv2/core/core.hpp"
-#include <list>
+#include <vector>
 
 class CarCounter {
 
@@ -28,6 +29,8 @@ public:
     int updateStats(std::vector<Blob>& blobs, long currentTime); //TODO: use timestamps instead?
 
 private:
+    ObjectIdentifier * getFit(Blob b, std::vector<ObjectIdentifier*> oi, long currentTime);
+
     double distanceThreshold;
     double expectedPathSlope;
     int carCount;
@@ -38,10 +41,11 @@ private:
 
     cv::Rect * boundaries;
 
-    std::list<EastboundObjectIdentifier> objects;
-    std::list<Blob> unidentifiedBlobs;
+    std::vector<EastboundObjectIdentifier*> eastboundObjects;
+    std::vector<WestboundObjectIdentifier*> westboundObjects;
+    std::vector<Blob> unidentifiedBlobs;
 
-    std::list<Blob> allBlobs;
+    std::vector<Blob> allBlobs;
 
     int rosCreated;
 

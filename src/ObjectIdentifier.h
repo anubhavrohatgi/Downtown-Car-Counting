@@ -14,7 +14,7 @@ public:
 
     ~ObjectIdentifier();
 
-    // Returns fitness on scale of 0 - 100
+    // Returns fitness score. Higher is better.
     virtual int getFit(Blob b) = 0;
 
     void updateTime(long currentTime);
@@ -28,11 +28,7 @@ public:
 
     void printPoints();
 
-    double distanceTravelled();
-    double errFromLine(Blob b);
-    double distanceFromLastBlob(Blob b);
-
-    Blob getLastBlob();
+    double getDistanceTravelled();
 
     int getNumBlobs();
 
@@ -40,17 +36,33 @@ public:
 
     long getLifetime();
 
+    enum ObjectType {
+        UNKNOWN,
+        VEHICLE,
+        STREET_CAR,
+        PERSON,
+        BICYCLE,
+        NUM_CLASSES
+    };
+
+    virtual ObjectType getType() = 0;
+
+protected:
+    double errFromLine(Blob b);
+    double distanceFromLastBlob(Blob b);
+
+    Blob getLastBlob();
+
     int getFirstTime();
 
     double getXMovement();
     double getYMovement();
 
-    // Returned in pixels per frame
+    // Returned in pixels per millisecond
     double getSpeed();
 
     virtual bool inRange(Blob b);
     virtual double distFromExpectedPath(Blob b);
-    static bool inStartingZone(Blob b);
     bool inEndZone();
     std::vector<Blob> * getBlobs();
 
@@ -66,6 +78,8 @@ public:
     double distToPredictedTX(long time, double x);
     double distToPredictedTY(long time, double y);
 
+    double getAverageSize();
+
     double rValues()
     {
         return xyR + tyR + txR;
@@ -75,19 +89,6 @@ public:
     double xyR;
     double tyR;
     double txR;
-
-    enum ObjectType {
-        UNKNOWN,
-        VEHICLE,
-        STREET_CAR,
-        PERSON,
-        BICYCLE,
-        NUM_CLASSES
-    };
-
-    ObjectType getType() {
-        return type;
-    }
 
 private:
     int id;
@@ -102,7 +103,8 @@ private:
     std::pair<double,double> txLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
     std::pair<double,double> tyLeastSqrRegression(std::vector<Blob> &blobs, int numPointsToUse);
 
-    long time;
+    long currentTime;
+    long startTime;
     int frameCount;
     Blob lastBlob;
 

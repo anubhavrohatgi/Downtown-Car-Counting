@@ -14,7 +14,8 @@ ObjectIdentifier::ObjectIdentifier(Blob b) :
     closestBlob(b),
     furthestBlob(b),
     numBlobs(0),
-    time(b.time),
+    currentTime(b.time),
+    startTime(b.time),
     xyFilter(*(new KalmanFilter(4,2,0))),
     txFilter(*(new KalmanFilter(4,2,0))),
     tyFilter(*(new KalmanFilter(4,2,0))),
@@ -69,12 +70,12 @@ ObjectIdentifier::~ObjectIdentifier()
 
 void ObjectIdentifier::updateTime(long currentTime)
 {
-    time = currentTime;
+    currentTime = currentTime;
 }
 
 long ObjectIdentifier::lastSeen()
 {
-    return (time - blobs.at(blobs.size() - 1).time);
+    return (currentTime - blobs.at(blobs.size() - 1).time);
 }
 
 int ObjectIdentifier::getNumBlobs()
@@ -89,12 +90,12 @@ int ObjectIdentifier::getFirstTime()
 
 long ObjectIdentifier::getLifetime()
 {
-    return (lastBlob.time - blobs.at(0).time);
+    return (currentTime - startTime);
 }
 
 double ObjectIdentifier::getSpeed()
 {
-    double speed = (getLifetime() > 0 ? distanceTravelled() / getLifetime() : 0);
+    double speed = (getLifetime() > 0 ? getDistanceTravelled() / getLifetime() : 0);
     return speed;
 }
 
@@ -141,7 +142,7 @@ void ObjectIdentifier::printPoints()
     }
 }
 
-double ObjectIdentifier::distanceTravelled()
+double ObjectIdentifier::getDistanceTravelled()
 {
     return distanceBetweenBlobs(furthestBlob, closestBlob);
 }
@@ -321,11 +322,14 @@ bool ObjectIdentifier::inRange(Blob b)
     return false;
 }
 
-bool ObjectIdentifier::inStartingZone(Blob b)
-{   // Crop values: -x 265 -y 230 -l 375 -t 225
-    double x = b.x;
-    double y = b.y;
-    return ((y >= 75 && y <= 100) && ((x >= 0 && x <= 50) || (x >= 290 && x <= 340)));
+// TODO: store this calculation
+double ObjectIdentifier::getAverageSize()
+{
+    int sizeSum = 0;
+    for (int i = 0; i < blobs.size(); i++) {
+        sizeSum += blobs.at(i).area;
+    }
+    return (sizeSum / blobs.size());
 }
 
 bool ObjectIdentifier::inEndZone()
@@ -429,7 +433,7 @@ pair<double,double> ObjectIdentifier::txLeastSqrRegression(vector<Blob> &blobs, 
       SUMres += res;
 #if 0
       printf ("   (%0.2f %0.2f)      %0.5E         %0.5E\n",
-       blobs.at(blobs.size() - 1 - i).time, blobs.at(blobs.size() - 1 - i).x, res, Yres);
+       blobs.at(blobs.size() - 1 - i).currentTime, blobs.at(blobs.size() - 1 - i).x, res, Yres);
 #endif
    }
 
@@ -516,7 +520,7 @@ pair<double,double> ObjectIdentifier::tyLeastSqrRegression(vector<Blob> &blobs, 
       SUMres += res;
 #if 0
       printf ("   (%0.2f %0.2f)      %0.5E         %0.5E\n",
-       blobs.at(blobs.size() - 1 - i).time, blobs.at(blobs.size() - 1 - i).y, res, Yres);
+       blobs.at(blobs.size() - 1 - i).currentTime, blobs.at(blobs.size() - 1 - i).y, res, Yres);
 #endif
    }
 

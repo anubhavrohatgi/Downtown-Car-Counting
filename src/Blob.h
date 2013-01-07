@@ -6,18 +6,10 @@ class Blob {
 public:
     Blob() { }
 
-    Blob(double x, double y, double area, int frameNumber, long time) :
+    Blob(double x, double y, double area, long time) :
         x(x),
         y(y),
         area(area),
-        time(time)
-    {
-
-    }
-
-    Blob(double x, double y, int frameNumber, long time) :
-        x(x),
-        y(y),
         time(time)
     {
 

@@ -1,4 +1,4 @@
-#include "EastboundObjectIdentifier.h"
+#include "WestboundObjectIdentifier.h"
 
 #include <limits>
 #include <cmath>
@@ -6,13 +6,13 @@
 using namespace std;
 using namespace cv;
 
-EastboundObjectIdentifier::EastboundObjectIdentifier(Blob b) :
+WestboundObjectIdentifier::WestboundObjectIdentifier(Blob b) :
         ObjectIdentifier(b)
 {
 
 }
 
-int EastboundObjectIdentifier::getFit(Blob b)
+int WestboundObjectIdentifier::getFit(Blob b)
 {
     int score = 0;
 
@@ -46,7 +46,7 @@ int EastboundObjectIdentifier::getFit(Blob b)
     return score;
 }
 
-ObjectIdentifier::ObjectType EastboundObjectIdentifier::getType()
+ObjectIdentifier::ObjectType WestboundObjectIdentifier::getType()
 {
     // TODO: update parameters, add slope
     if (getAverageSize() > 400 && getNumBlobs() > 10 && getDistanceTravelled() > 200) {
@@ -56,9 +56,9 @@ ObjectIdentifier::ObjectType EastboundObjectIdentifier::getType()
     }
 }
 
-EastboundObjectIdentifier::~EastboundObjectIdentifier()
+WestboundObjectIdentifier::~WestboundObjectIdentifier()
 {
-    printf("~ EastboundObjectIdentifier ID %d type %d size %f numBlobs %d dist %f\n", getId(), getType(), getAverageSize(), getNumBlobs(), getDistanceTravelled());
+    printf("~ WestboundObjectIdentifier ID %d type %d size %f numBlobs %d dist %f\n", getId(), getType(), getAverageSize(), getNumBlobs(), getDistanceTravelled());
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
     // TODO: why can't I delete these ?
     //delete &xyFilter;
