@@ -68,7 +68,7 @@ int DataSourceManager::processCsvFile(const char * path)
 
                 // New frame in the log file, process blobs stored for last frame
                 if (time != lastTime && blobs.size() > 0) {
-                    counter.updateStats(blobs, lastTime);
+                    counter.processBlobs(blobs, lastTime);
                     blobs.clear();
                 }
 
@@ -83,7 +83,7 @@ int DataSourceManager::processCsvFile(const char * path)
     // Make sure blobs time out
     blobs.clear();
     for (int i = 0; i < 200; i++) { // TODO: get a number for this instead of 200
-        counter.updateStats(blobs);
+        counter.processBlobs(blobs);
     }
 #endif
     return counter.getCarCount();

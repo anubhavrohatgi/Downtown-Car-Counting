@@ -20,7 +20,6 @@ ObjectIdentifier::ObjectIdentifier(Blob* blob) :
     xyFilter(*(new KalmanFilter(4,2,0))),
     txFilter(*(new KalmanFilter(4,2,0))),
     tyFilter(*(new KalmanFilter(4,2,0))),
-    measurement(*(new cv::Mat_<float>(2,1))),
     type(UNKNOWN)
 {
     Blob& b = *blob;
@@ -63,14 +62,14 @@ ObjectIdentifier::ObjectIdentifier(Blob* blob) :
 ObjectIdentifier::~ObjectIdentifier()
 {
     for (int i = 0; i < blobs.size(); i++) {
-        //delete blobs.at(i);
+        delete blobs.at(i);
     }
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
     // TODO: why can't I delete these ?
     delete &xyFilter;
     delete &txFilter;
     delete &tyFilter;
-    delete &measurement;
+    //delete &measurement;
 }
 
 void ObjectIdentifier::updateTime(long currentTime)
@@ -109,6 +108,7 @@ bool ObjectIdentifier::addBlob(Blob& b)
     numBlobs++;
     lastBlob = &b;
     blobs.push_back(&b);
+    currentTime = b.time;
 
     // Keep track of closest and furthest blobs from origin
     double distanceToOrigin = distance(b.x, b.y, 0, 0);
@@ -126,7 +126,7 @@ bool ObjectIdentifier::addBlob(Blob& b)
     xyFilter.predict();
     txFilter.predict();
     tyFilter.predict();
-
+    cv::Mat_<float> measurement(2,1);
     measurement(0) = b.time;
     measurement(1) = b.x;
     txFilter.correct(measurement);

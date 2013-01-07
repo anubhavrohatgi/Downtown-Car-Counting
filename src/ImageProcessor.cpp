@@ -53,7 +53,7 @@ void ImageProcessor::processVideoFile(const char * path)
         printf("%d / %d  %f pct\n", framesProcessed, numFrames, ((double)framesProcessed / (double)numFrames) * 100);
         if (waitKey(1) >= 0) break;
     }
-    carCounter->classifyObjects(true);
+    carCounter->classifyObjects(true, 0);
 }
 
 int ImageProcessor::processFrame(Mat inFrame, long currentTime)
@@ -165,7 +165,7 @@ int ImageProcessor::processFrame(Mat inFrame, long currentTime)
                     Blob* b = new Blob(blob.centroid.x, blob.centroid.y, blob.area, currentTime);
                     blobs.push_back(b);
             }
-            carCounter->updateStats(blobs, currentTime);
+            carCounter->processBlobs(blobs, currentTime);
         }
 
         if (showFrames) {

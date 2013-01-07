@@ -58,7 +58,7 @@ ObjectIdentifier::ObjectType EastboundObjectIdentifier::getType()
 
 EastboundObjectIdentifier::~EastboundObjectIdentifier()
 {
-    printf("~ EastboundObjectIdentifier ID %d type %d size %f numBlobs %d dist %f\n", getId(), getType(), getAverageSize(), getNumBlobs(), getDistanceTravelled());
+    printf("~ EastboundObjectIdentifier ID %d type %d size %f numBlobs %d dist %f lifetime %ld\n", getId(), getType(), getAverageSize(), getNumBlobs(), getDistanceTravelled(), getLifetime());
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
     // TODO: why can't I delete these ?
     //delete &xyFilter;

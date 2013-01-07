@@ -13,7 +13,7 @@ public:
         time(time)
     {
         blobsAlive++;
-        printf("Blobs Alive %d\n", blobsAlive);
+        //printf("Blobs Alive %d\n", blobsAlive);
     }
 
     void setClusterId(int id) {
@@ -26,7 +26,7 @@ public:
 
     ~Blob() {
         blobsAlive--;
-        printf("Blobs Alive %d\n", blobsAlive);
+        //printf("Blobs Alive %d\n", blobsAlive);
     }
 
     double x;

@@ -16,29 +16,27 @@ CarCounter::CarCounter() :
 
 CarCounter::~CarCounter()
 {
-    // Log all remaining blobs
-    classifyObjects(true);
-    blobsToLogAndRemove(allBlobs.size());
-    printf("EBO Size %d\n", eastboundObjects.size());
-
-    printf("WBO Size %d\n", westboundObjects.size());
-for (int i = 0; i < unidentifiedBlobs.size(); i++) {
-        //delete unidentifiedBlobs.at(i);
+    // Shutting down, classify remaining objects
+    classifyObjects(true, 0);
+    assert(eastboundObjects.size() == 0);
+    assert(westboundObjects.size() == 0);
+    for (int i = 0; i < unidentifiedBlobs.size(); i++) {
+        delete unidentifiedBlobs.at(i);
     }
 }
 
-int CarCounter::updateStats(vector<Blob*>& blobs, long currentTime) {
+int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime) {
     int numBlobs = blobs.size();
     if (numBlobs > 0) printf("Time %ld\n", blobs.front()->time);
-
+    printf("Updating Stats numBlobs %d  time %ld\n", (int)blobs.size(), currentTime);
     // Determine the best fit for each blob
     for (unsigned int i = 0; i < blobs.size(); i++) {
         Blob& blob = *blobs.at(i);
         ObjectIdentifier * bestFit = NULL;
         if(EastboundObjectIdentifier::isInRange(blob)) {
-            bestFit = findBestFit(blob, eastboundObjects, currentTime);
+            bestFit = findBestFit(blob, eastboundObjects);
         } else if (WestboundObjectIdentifier::isInRange(blob)) {
-            bestFit = findBestFit(blob, westboundObjects, currentTime);
+            bestFit = findBestFit(blob, westboundObjects);
         }
 
         if (bestFit) {
@@ -66,12 +64,12 @@ int CarCounter::updateStats(vector<Blob*>& blobs, long currentTime) {
             unidentifiedBlobs.push_back(&blob);
             printf("UNIDENTIFIED BLOB\n");
         }
-        allBlobs.push_back(&blob);
+        logBlob(blob);
     }
-    return classifyObjects(false);;
+    return classifyObjects(false, currentTime);
 }
 
-ObjectIdentifier* CarCounter::findBestFit(Blob& b, list<ObjectIdentifier*> objects, long currentTime)
+ObjectIdentifier* CarCounter::findBestFit(Blob& b, list<ObjectIdentifier*> objects)
 {
     ObjectIdentifier* bestFit = NULL;
     int bestFitRecorded = 0;
@@ -87,13 +85,16 @@ ObjectIdentifier* CarCounter::findBestFit(Blob& b, list<ObjectIdentifier*> objec
     return bestFit;
 }
 
-int CarCounter::classifyObjects(bool forceTimeout)
+int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
 {
     int newlyClassified = 0;
     // Iterate through ObjectIdentifiers and see if we can classify (or discard) them
     std::list<ObjectIdentifier*>::iterator iterator = eastboundObjects.begin();
     while (iterator != eastboundObjects.end()) {
         ObjectIdentifier * oi = *iterator;
+        if (currentTime) {
+            oi->updateTime(currentTime);
+        }
         long lastSeen = forceTimeout ? numeric_limits<long>::max() : oi->lastSeen();
         if (lastSeen > oi->getTimeout()) {
             // Object has timed out
@@ -113,6 +114,9 @@ int CarCounter::classifyObjects(bool forceTimeout)
     iterator = westboundObjects.begin();
     while (iterator != westboundObjects.end()) {
         ObjectIdentifier * oi = *iterator;
+        if (currentTime) {
+            oi->updateTime(currentTime);
+        }
         long lastSeen = forceTimeout ? numeric_limits<long>::max() : oi->lastSeen();
         if (lastSeen > oi->getTimeout()) {
             // Object has timed out
@@ -128,42 +132,23 @@ int CarCounter::classifyObjects(bool forceTimeout)
             iterator++;
         }
     }
-
-    // Log old blobs to file
-    // TODO: better way to do memory mgmt
-    if (allBlobs.size() > 500) {
-        //blobsToLogAndRemove(300);
-    }
     return newlyClassified;
 }
 
-void CarCounter::blobsToLogAndRemove(int numBlobs)
+void CarCounter::logBlob(Blob& b)
 {
-    if (allBlobs.size() < numBlobs) {
-        numBlobs = allBlobs.size();
-    }
-
-    if (numBlobs == 0) return;
-    printf("NUM BLOBS %d\n", numBlobs);
     char buf[120];
-
     if (writesToLog == 0) {
         // Create header and legend
         writeToLog("time,x,y,area,id\n"); // TODO: beef up logging
         for (int j = 1; j < 8; j++) {
-            Blob& b = *allBlobs.front();
             double x = b.x + 35 * j;
             sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, x, b.y, 4000, j);
             writeToLog(buf);
         }
     }
-
-    for (int i = 0; i < allBlobs.size(); i++) {
-        Blob& b = *allBlobs.at(i);
-        sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
-        writeToLog(buf);
-        delete &b;
-    }
+    sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
+    writeToLog(buf);
 }
 
 int CarCounter::writeToLog(const char * line)

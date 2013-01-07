@@ -25,12 +25,12 @@ public:
 
     double getAvgSpeed(int numFrames);
 
-    int classifyObjects(bool forceAll);
+    int classifyObjects(bool forceAll, long currentTime);
 
-    int updateStats(std::vector<Blob*>& blobs, long currentTime); //TODO: use timestamps instead?
+    int processBlobs(std::vector<Blob*>& blobs, long currentTime);
 
 private:
-    ObjectIdentifier * findBestFit(Blob& b, std::list<ObjectIdentifier*> objects, long currentTime);
+    ObjectIdentifier * findBestFit(Blob& b, std::list<ObjectIdentifier*> objects);
 
     double distanceThreshold;
     double expectedPathSlope;
@@ -46,8 +46,6 @@ private:
     std::list<ObjectIdentifier*> westboundObjects;
     std::vector<Blob*> unidentifiedBlobs;
 
-    std::vector<Blob*> allBlobs;
-
     int rosCreated;
 
     int frameNumber;
@@ -55,7 +53,8 @@ private:
     // Logging
     int writeToLog(const char * line);
     // Also deletes blobs after logging them
-    void blobsToLogAndRemove(int numBlobs);
+    //void blobsToLogAndRemove(int numBlobs);
+    void logBlob(Blob& b);
     FILE * logFile;
     const char * logFilePath;
     int writesToLog;
