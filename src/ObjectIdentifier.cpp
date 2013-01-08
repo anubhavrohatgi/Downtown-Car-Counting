@@ -8,7 +8,7 @@ using namespace cv;
 
 ObjectIdentifier::ObjectIdentifier(Blob* blob) :
     frameCount(0),
-    id(1 + (globalID++ % 7)),
+    id(2 + (globalID++ % 6)),
     closestDistToOrigin(999999), // TODO: maxint
     furthestDistToOrigin(0),
     closestBlob(blob),

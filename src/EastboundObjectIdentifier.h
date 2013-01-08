@@ -24,6 +24,7 @@ public:
     static bool inStartingZone(Blob& b) {
         bool northLane = (b.x >= 0 && b.x <= 60 && b.y >= 75 && b.y <= 100);
         bool southLane = (b.x >= 45 && b.x <= 105 && b.y >= 115 && b.y <= 175);
+        printf("EB Starting Zone N %d S %d NS %d\n", northLane, southLane, (northLane || southLane));
         return (northLane || southLane);
     }
 

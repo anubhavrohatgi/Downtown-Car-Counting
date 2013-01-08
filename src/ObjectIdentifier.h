@@ -5,7 +5,7 @@
 #include <vector>
 #include <opencv2/video/tracking.hpp>
 
-static int globalID = 1;
+static int globalID = 0;
 
 class ObjectIdentifier {
 
