@@ -30,7 +30,8 @@ public:
 
     // Returns true if blob is in eastbound traffic lanes
     static bool isInRange(Blob& b) {
-        double yCalc = 31 * b.x / 163 + (10442/163);
+        double overlap = 0; // due to perspective, eastbound cars leak over into westbound direction
+        double yCalc = 31 * b.x / 163 + (10442/163) - overlap;
         printf("YCalc %f Meas %f at x=%f\n", yCalc, b.y, b.x);
         return (b.y >= yCalc);
     }

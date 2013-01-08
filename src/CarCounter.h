@@ -30,7 +30,7 @@ public:
     int processBlobs(std::vector<Blob*>& blobs, long currentTime);
 
 private:
-    ObjectIdentifier * findBestFit(Blob& b, std::list<ObjectIdentifier*> objects);
+    int findBestFit(Blob& b, std::list<ObjectIdentifier*> objects, ObjectIdentifier** bestFit);
 
     double distanceThreshold;
     double expectedPathSlope;

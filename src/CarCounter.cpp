@@ -30,12 +30,24 @@ int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime) {
     // Determine the best fit for each blob
     for (unsigned int i = 0; i < blobs.size(); i++) {
         Blob& blob = *blobs.at(i);
+        int bestFitEB=0, bestFitWB=0;
         printf("\ntime=%ld  x=%f  y=%f  numBlobs %d\n", currentTime, blob.x, blob.y, (int)blobs.size());
-        ObjectIdentifier * bestFit = NULL;
+        ObjectIdentifier* bestFit = NULL;
+        ObjectIdentifier* pBestFitEB = NULL;
+        ObjectIdentifier* pBestFitWB = NULL;
         if(EastboundObjectIdentifier::isInRange(blob)) {
-            bestFit = findBestFit(blob, eastboundObjects);
-        } else if (WestboundObjectIdentifier::isInRange(blob)) {
-            bestFit = findBestFit(blob, westboundObjects);
+            bestFitEB = findBestFit(blob, eastboundObjects, &pBestFitEB);
+        }
+
+        // Since there's some overlap between EB and WB, may need to test blob against EB and WB identifiers
+        if (WestboundObjectIdentifier::isInRange(blob)) {
+            bestFitWB = findBestFit(blob, westboundObjects, &pBestFitWB);
+        }
+
+        if (bestFitEB > bestFitWB) {
+            bestFit = pBestFitEB;
+        } else {
+            bestFit = pBestFitWB;
         }
 
         if (bestFit) {
@@ -68,20 +80,21 @@ int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime) {
     return classifyObjects(false, currentTime);
 }
 
-ObjectIdentifier* CarCounter::findBestFit(Blob& b, list<ObjectIdentifier*> objects)
+int CarCounter::findBestFit(Blob& b, list<ObjectIdentifier*> objects, ObjectIdentifier** bestFit)
 {
-    ObjectIdentifier* bestFit = NULL;
+    ObjectIdentifier* bfit = NULL;
     int bestFitRecorded = 0;
 
     for (list<ObjectIdentifier*>::const_iterator iterator = objects.begin(), end = objects.end(); iterator != end; ++iterator) {
         ObjectIdentifier* oi = *iterator;
         int fit = oi->getFit(b);
         if (fit > bestFitRecorded) {
-            bestFit = oi;
+            bfit = oi;
             bestFitRecorded = fit;
         }
     }
-    return bestFit;
+    *bestFit = bfit;
+    return bestFitRecorded;
 }
 
 int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
