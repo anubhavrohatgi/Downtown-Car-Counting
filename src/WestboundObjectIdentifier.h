@@ -13,8 +13,7 @@ public:
 
     ~WestboundObjectIdentifier();
 
-    // Returns fitness on scale of 0 - 100
-    virtual int getFit(Blob& b);
+    //virtual int getFit(Blob& b);
 
     virtual long getTimeout() {
         return 60*1000;

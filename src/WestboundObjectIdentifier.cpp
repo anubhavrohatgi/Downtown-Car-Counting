@@ -11,7 +11,7 @@ WestboundObjectIdentifier::WestboundObjectIdentifier(Blob* b) :
 {
 
 }
-
+#if 0
 int WestboundObjectIdentifier::getFit(Blob& b)
 {
     int score = 0;
@@ -48,6 +48,7 @@ int WestboundObjectIdentifier::getFit(Blob& b)
     printf("Score %d\n", score);
     return score;
 }
+#endif
 
 ObjectIdentifier::ObjectType WestboundObjectIdentifier::getType()
 {
@@ -61,7 +62,7 @@ ObjectIdentifier::ObjectType WestboundObjectIdentifier::getType()
 
 WestboundObjectIdentifier::~WestboundObjectIdentifier()
 {
-    printf("~ WestboundObjectIdentifier ID %d type %d size %f numBlobs %d dist %f lifetime %ld\n", getId(), getType(), getAverageSize(), getNumBlobs(), getDistanceTravelled(), getLifetime());
+    printf("~ WestboundObjectIdentifier ID %d type %d size %f numBlobs %d dist %f lifetime %ld slope %f\n", getId(), getType(), getAverageSize(), getNumBlobs(), getDistanceTravelled(), getLifetime(), getXYSlope());
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
     // TODO: why can't I delete these ?
     //delete &xyFilter;

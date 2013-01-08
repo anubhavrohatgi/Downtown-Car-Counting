@@ -8,7 +8,7 @@ using namespace cv;
 
 ObjectIdentifier::ObjectIdentifier(Blob* blob) :
     frameCount(0),
-    id(1 + (globalID++ % 8)),
+    id(1 + (globalID++ % 7)),
     closestDistToOrigin(999999), // TODO: maxint
     furthestDistToOrigin(0),
     closestBlob(blob),
@@ -140,6 +140,48 @@ bool ObjectIdentifier::addBlob(Blob& b)
     xyFilter.correct(measurement);
 }
 
+int ObjectIdentifier::getFit(Blob& b)
+{
+    int score = 0;
+
+    double distToLast = distanceFromLastBlob(b);
+    double toPredictedXY = distToPredictedXY(b.x, b.y);
+    double toPredictedTX = distToPredictedTX(b.time, b.x);
+    double toPredictedTY = distToPredictedTY(b.time, b.y);
+    double e1 = errXY(b.x, b.y);
+    double e2 = errTX(b.time, b.x);
+    double e3 = errTY(b.time, b.y);
+    double e = sqrt(e1*e1 + e2*e2 + e3*e3);
+
+    printf("Predicted XY %f TX %f TY %f\n", toPredictedXY, toPredictedTX, toPredictedTY);
+    printf("ID %d XY %f TX %f TY %f   D %f      SumSq: %f\n", getId(), e1, e2, e3, distToLast, e);
+
+    if (getNumBlobs() <= 5) {
+        score = (30 - distToLast) * 3;
+#if 0
+    } else if (e < 20 && e < minError) {
+        minError = e;
+        bestFit = oi;
+        printf("Best fit accepted\n");
+#endif
+    } else {
+        // These 3 contribute 200 / 300 possible score
+        int xyScore = 100 - (toPredictedXY < 100 ? toPredictedXY : 100);
+        int txScore = 100 - (toPredictedTX < 100 ? toPredictedTX : 100);
+        int tyScore = 100 - (toPredictedTY < 100 ? toPredictedTY : 100);
+        int xytScore = xyScore + txScore + tyScore - 100;
+        if (xytScore < 0) xytScore = 0;
+        // Contributes up to 120
+        int linearityScore = (e <= 60) ? (60 - e) * 2 : 0;
+        score = xytScore + linearityScore;
+        if (linearityScore && distToLast < 20) {
+            score += (20 - distToLast) * 5;
+        }
+    }
+    printf("Score %d\n", score);
+    return score;
+}
+
 void ObjectIdentifier::printPoints()
 {
     for (int i = 0; i < blobs.size(); i++) {
@@ -153,9 +195,16 @@ double ObjectIdentifier::getDistanceTravelled()
     return distanceBetweenBlobs(*furthestBlob, *closestBlob);
 }
 
-double ObjectIdentifier::errXY(double x, double y)
+double ObjectIdentifier::getXYSlope()
 {
     pair<double,double> line = xyLeastSqrRegression(blobs, blobs.size());
+    double slope = line.first;
+    return slope;
+}
+
+double ObjectIdentifier::errXY(double x, double y)
+{
+    pair<double,double> line = xyLeastSqrRegression(blobs, max(10, (int)blobs.size()/2));
     double slope = line.first;
     double y_int = line.second;
 
@@ -170,7 +219,7 @@ double ObjectIdentifier::errXY(double x, double y)
 
 double ObjectIdentifier::errTX(long time, double x)
 {
-    pair<double,double> line = txLeastSqrRegression(blobs, blobs.size());
+    pair<double,double> line = txLeastSqrRegression(blobs, max(10, (int)blobs.size()/2));
     double slope = line.first;
     double y_int = line.second;
 
@@ -185,7 +234,7 @@ double ObjectIdentifier::errTX(long time, double x)
 
 double ObjectIdentifier::errTY(long time, double y)
 {
-    pair<double,double> line = tyLeastSqrRegression(blobs, blobs.size());
+    pair<double,double> line = tyLeastSqrRegression(blobs, max(10, (int)blobs.size()/2));
     double slope = line.first;
     double y_int = line.second;
 

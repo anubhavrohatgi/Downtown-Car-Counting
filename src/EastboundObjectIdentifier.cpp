@@ -11,7 +11,7 @@ EastboundObjectIdentifier::EastboundObjectIdentifier(Blob* b) :
 {
 
 }
-
+#if 0
 int EastboundObjectIdentifier::getFit(Blob& b)
 {
     int score = 0;
@@ -41,14 +41,19 @@ int EastboundObjectIdentifier::getFit(Blob& b)
         int xyScore = 100 - (toPredictedXY < 100 ? toPredictedXY : 100);
         int txScore = 100 - (toPredictedTX < 100 ? toPredictedTX : 100);
         int tyScore = 100 - (toPredictedTY < 100 ? toPredictedTY : 100);
-        // Contributes up to 100
-        int linearityScore = (e <= 25) ? (25 - e) * 4 : 0;
-        score = (xyScore + txScore + tyScore - 100) + linearityScore;
+        int xytScore = xyScore + txScore + tyScore - 100;
+        if (xytScore < 0) xytScore = 0;
+        // Contributes up to 120
+        int linearityScore = (e <= 60) ? (60 - e) * 2 : 0;
+        score = xytScore + linearityScore;
+        if (linearityScore && distToLast < 20) {
+            score += (20 - distToLast) * 5;
+        }
     }
     printf("Score %d\n", score);
     return score;
 }
-
+#endif
 ObjectIdentifier::ObjectType EastboundObjectIdentifier::getType()
 {
     // TODO: update parameters, add slope
@@ -61,7 +66,7 @@ ObjectIdentifier::ObjectType EastboundObjectIdentifier::getType()
 
 EastboundObjectIdentifier::~EastboundObjectIdentifier()
 {
-    printf("~ EastboundObjectIdentifier ID %d type %d size %f numBlobs %d dist %f lifetime %ld\n", getId(), getType(), getAverageSize(), getNumBlobs(), getDistanceTravelled(), getLifetime());
+    printf("~ EastboundObjectIdentifier ID %d type %d size %f numBlobs %d dist %f lifetime %ld slope %f\n", getId(), getType(), getAverageSize(), getNumBlobs(), getDistanceTravelled(), getLifetime(), getXYSlope());
     //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
     // TODO: why can't I delete these ?
     //delete &xyFilter;

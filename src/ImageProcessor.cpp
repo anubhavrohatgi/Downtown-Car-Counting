@@ -43,13 +43,14 @@ void ImageProcessor::processVideoFile(const char * path)
     int framesProcessed = 0;
 
     printf("Video: %s\nStats: %d frames, %d fps, len %ds\n", path, numFrames, fps, videoLength);
-    long double time = 0;
+    long time = 0;
     while (framesProcessed < numFrames) {
         Mat frame;
         video >> frame;
+        printf("time %ld\n", time);
         processFrame(frame, time);
         framesProcessed++;
-        time += (1 / fps);
+        time += (1000 / fps);
         printf("%d / %d  %f pct\n", framesProcessed, numFrames, ((double)framesProcessed / (double)numFrames) * 100);
         if (waitKey(1) >= 0) break;
     }

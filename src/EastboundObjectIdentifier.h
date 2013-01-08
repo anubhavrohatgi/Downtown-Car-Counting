@@ -13,8 +13,7 @@ public:
 
     ~EastboundObjectIdentifier();
 
-    // Returns fitness on scale of 0 - 100
-    virtual int getFit(Blob& b);
+    //virtual int getFit(Blob& b);
 
     virtual long getTimeout() {
         return 10*1000;
@@ -23,7 +22,9 @@ public:
     virtual ObjectIdentifier::ObjectType getType();
 
     static bool inStartingZone(Blob& b) {
-        return (b.x >= 0 && b.x <= 50 && b.y >= 75 && b.y <= 100);
+        bool northLane = (b.x >= 0 && b.x <= 60 && b.y >= 75 && b.y <= 100);
+        bool southLane = (b.x >= 45 && b.x <= 105 && b.y >= 115 && b.y <= 175);
+        return (northLane || southLane);
     }
 
     // Returns true if blob is in eastbound traffic lanes

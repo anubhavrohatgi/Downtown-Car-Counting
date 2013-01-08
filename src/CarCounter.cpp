@@ -27,11 +27,10 @@ CarCounter::~CarCounter()
 
 int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime) {
     int numBlobs = blobs.size();
-    if (numBlobs > 0) printf("Time %ld\n", blobs.front()->time);
-    printf("Updating Stats numBlobs %d  time %ld\n", (int)blobs.size(), currentTime);
     // Determine the best fit for each blob
     for (unsigned int i = 0; i < blobs.size(); i++) {
         Blob& blob = *blobs.at(i);
+        printf("\ntime=%ld  x=%f  y=%f  numBlobs %d\n", currentTime, blob.x, blob.y, (int)blobs.size());
         ObjectIdentifier * bestFit = NULL;
         if(EastboundObjectIdentifier::isInRange(blob)) {
             bestFit = findBestFit(blob, eastboundObjects);
@@ -145,7 +144,7 @@ int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
 
 void CarCounter::logBlob(Blob& b)
 {
-    // TODO: store frameNum and blob dimensions?
+    // TODO: store frameNum, human-readable time, and blob dimensions?
     char buf[120];
     if (writesToLog == 0) {
         // Create header and legend
@@ -156,8 +155,10 @@ void CarCounter::logBlob(Blob& b)
             writeToLog(buf);
         }
     }
-    sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
-    writeToLog(buf);
+    if (b.getClusterId() != 1 || true) {
+        sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
+        writeToLog(buf);
+    }
 }
 
 int CarCounter::writeToLog(const char * line)

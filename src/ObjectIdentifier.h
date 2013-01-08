@@ -15,7 +15,7 @@ public:
     virtual ~ObjectIdentifier();
 
     // Returns fitness score. Higher is better.
-    virtual int getFit(Blob& b) = 0;
+    virtual int getFit(Blob& b);
 
     void updateTime(long currentTime);
 
@@ -27,7 +27,7 @@ public:
 
     void printPoints();
 
-
+    double getXYSlope();
 
     double getDistanceTravelled();
 
