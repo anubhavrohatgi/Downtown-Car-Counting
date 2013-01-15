@@ -171,4 +171,5 @@ int main(int argc, char* argv[]) {
             manager.processVideoFile(videoFile);
         }
     }
+    delete dataManager;
 }

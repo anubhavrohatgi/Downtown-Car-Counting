@@ -21,10 +21,6 @@ public:
         objectDetectedFilePath = path;
     }
 
-    void setObjectDetectedLogFile(const char * path) {
-
-    }
-
     ~CarCounter();
 
     int getCarCount() {

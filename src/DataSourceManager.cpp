@@ -24,7 +24,7 @@ void DataSourceManager::setCsvBlobFile(const char * path)
 
 void DataSourceManager::setCsvObjectsFile(const char * path)
 {
-    counter.setObjectDetectedLogFile(path);
+    counter.setObjectsDetectedLogFile(path);
 }
 
 int DataSourceManager::processVideoFile(const char * path)

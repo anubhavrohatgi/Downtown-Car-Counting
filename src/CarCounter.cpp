@@ -207,9 +207,9 @@ void CarCounter::logIdentifiedObject(ObjectIdentifier& oi, long time)
     char buf[120];
     if (writesToObjectLog == 0) {
         // Create a legend
-        writeToObjectsLog("time,type,direction(W=0,E=1),numBlobs,lifetime(ms),custerID\n"); // TODO: beef up logging
+        writeToObjectsLog("time,type,direction(W=0 E=1),distance,numBlobs,lifetime(ms),custerID\n"); // TODO: beef up logging
     }
-    sprintf(buf, "%ld,%d,%d,%d,%ld,%d\n", time, oi.getType(), oi.getDirection(), oi.getNumBlobs(), oi.getLifetime(), oi.getId());
+    sprintf(buf, "%ld,%d,%c,%f,%d,%ld,%d\n", time, oi.getType(), oi.getDirection() == 0 ? 'W' : 'E', oi.getDistanceTravelled(), oi.getNumBlobs(), oi.getLifetime(), oi.getId());
     writeToObjectsLog(buf);
 }
 
@@ -220,7 +220,7 @@ int CarCounter::writeToObjectsLog(const char * line)
     objectsLogFile = fopen(objectDetectedFilePath, "a");
     fprintf(objectsLogFile, "%s", line);
     fclose(objectsLogFile);
-    writesToBlobLog++;
+    writesToObjectLog++;
     return 0;
 }
 
