@@ -13,8 +13,16 @@ class CarCounter {
 public:
     CarCounter();
 
-    void setOutputLogFile(const char * path) {
-        logFilePath = path;
+    void setBlobLogFile(const char * path) {
+        blobLogFilePath = path;
+    }
+
+    void setObjectsDetectedLogFile(const char * path) {
+        objectDetectedFilePath = path;
+    }
+
+    void setObjectDetectedLogFile(const char * path) {
+
     }
 
     ~CarCounter();
@@ -52,13 +60,18 @@ private:
     int frameNumber;
 
     // Logging
-    int writeToLog(const char * line);
+    int writeToBlobLog(const char * line);
+    int writeToObjectsLog(const char * line);
     // Also deletes blobs after logging them
     //void blobsToLogAndRemove(int numBlobs);
     void logBlob(Blob& b);
-    FILE * logFile;
-    const char * logFilePath;
-    int writesToLog;
+    void logIdentifiedObject(ObjectIdentifier& oi, long time);
+    FILE * blobLogFile;
+    FILE * objectsLogFile;
+    const char * blobLogFilePath;
+    const char * objectDetectedFilePath;
+    int writesToBlobLog;
+    int writesToObjectLog;
 
     const static int MIN_NUM_POINTS = 7;
     const static int MIN_FRAME_TIMEOUT = 5 * 10; // 10 seconds at 5 fps

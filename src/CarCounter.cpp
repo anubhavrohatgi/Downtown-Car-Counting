@@ -8,9 +8,11 @@ CarCounter::CarCounter() :
     bikeCount(0),
     streetcarCount(0),
     rosCreated(0),
-    logFile(NULL),
-    logFilePath(NULL),
-    writesToLog(0)
+    blobLogFile(NULL),
+    blobLogFilePath(NULL),
+    objectDetectedFilePath(NULL),
+    writesToBlobLog(0),
+    writesToObjectLog(0)
 {
 
 }
@@ -133,6 +135,7 @@ int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
                 logBlob(*blobs.at(i));
             }
 #endif
+            logIdentifiedObject(*oi, currentTime);
             delete oi;
             eastboundObjects.erase(iterator++);
         } else {
@@ -167,6 +170,7 @@ int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
                 logBlob(*blobs.at(i));
             }
 #endif
+            logIdentifiedObject(*oi, currentTime);
             delete oi;
             westboundObjects.erase(iterator++);
         } else {
@@ -182,32 +186,55 @@ void CarCounter::logBlob(Blob& b)
 {
     // TODO: store frameNum, human-readable time, and blob dimensions?
     char buf[120];
-    if (writesToLog == 0) {
+    if (writesToBlobLog == 0) {
         // Create header and legend
-        writeToLog("time,x,y,area,id\n"); // TODO: beef up logging
+        writeToBlobLog("time,x,y,area,id\n"); // TODO: beef up logging
         for (int j = 1; j < 8; j++) {
             double x = b.x + 35 * j;
             sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, x, b.y, 4000, j);
-            writeToLog(buf);
+            writeToBlobLog(buf);
         }
     }
     if (b.getClusterId() != 1 || true) {
         sprintf(buf, "%ld,%f,%f,%d,%d\n", b.time, b.x, b.y, (int)b.area, b.getClusterId());
-        writeToLog(buf);
+        writeToBlobLog(buf);
     }
 }
 
-int CarCounter::writeToLog(const char * line)
+void CarCounter::logIdentifiedObject(ObjectIdentifier& oi, long time)
 {
-    if (!logFilePath) return -1;
-
-    if (writesToLog == 0) {
-        logFile = fopen(logFilePath, "w");
-    } else {
-        logFile = fopen(logFilePath, "a");
+    // TODO: store frameNum, human-readable time, and blob dimensions?
+    char buf[120];
+    if (writesToObjectLog == 0) {
+        // Create a legend
+        writeToObjectsLog("time,type,numBlobs,lifetime(ms),custerID\n"); // TODO: beef up logging
     }
-    fprintf(logFile, "%s", line);
-    fclose(logFile);
-    writesToLog++;
+    sprintf(buf, "%ld,%d,%d,%ld,%d\n", time, oi.getType(), oi.getNumBlobs(), oi.getLifetime(), oi.getId());
+    writeToObjectsLog(buf);
+}
+
+int CarCounter::writeToObjectsLog(const char * line)
+{
+    if (!objectDetectedFilePath) return -1;
+
+    objectsLogFile = fopen(objectDetectedFilePath, "a");
+    fprintf(objectsLogFile, "%s", line);
+    fclose(objectsLogFile);
+    writesToBlobLog++;
+    return 0;
+}
+
+int CarCounter::writeToBlobLog(const char * line)
+{
+    if (!blobLogFilePath) return -1;
+
+    if (writesToBlobLog == 0) {
+        blobLogFile = fopen(blobLogFilePath, "w");
+    } else {
+        blobLogFile = fopen(blobLogFilePath, "a");
+    }
+    fprintf(blobLogFile, "%s", line);
+    fclose(blobLogFile);
+    writesToBlobLog++;
     return 0;
 }

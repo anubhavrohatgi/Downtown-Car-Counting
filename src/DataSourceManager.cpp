@@ -17,9 +17,14 @@ DataSourceManager::~DataSourceManager()
     delete imgProcessor;
 }
 
-void DataSourceManager::setCsvLogFile(const char * path)
+void DataSourceManager::setCsvBlobFile(const char * path)
 {
-    counter.setOutputLogFile(path);
+    counter.setBlobLogFile(path);
+}
+
+void DataSourceManager::setCsvObjectsFile(const char * path)
+{
+    counter.setObjectDetectedLogFile(path);
 }
 
 int DataSourceManager::processVideoFile(const char * path)

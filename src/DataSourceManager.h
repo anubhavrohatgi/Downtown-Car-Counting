@@ -11,7 +11,8 @@ public:
     DataSourceManager();
     ~DataSourceManager();
 
-    void setCsvLogFile(const char * path);
+    void setCsvBlobFile(const char * path);
+    void setCsvObjectsFile(const char * path);
 
     int processVideoFile(const char * path);
 

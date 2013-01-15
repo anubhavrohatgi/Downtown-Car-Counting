@@ -12,7 +12,8 @@ void printUsage(const char * name) {
             "   -c <libvcl_connection_string> # EXAMPLE: -c http://192.168.1.28/axis-cgi/mjpg/video.cgi?fps=10&nbrofframes=0\n" \
             "   -v <video_path>\n" \
             "\nOutput\n" \
-            "   -o <output_csv_log> \n" \
+            "   -b <output_csv_blobs_log> \n" \
+            "   -o <output_csv_objects_detected_log> \n" \
             "   -d # specifies if frames should be displayed while processing (valid with -c, -v)\n" \
             "   -j <path> # dumps jpeg frames to directory for making into a movie or debug purposes\n" \
             "             # (format ImageA[frameCount mod 1000].jpg and imageB[frameCount mod 1000].jpg)\n" \
@@ -41,7 +42,8 @@ int main(int argc, char* argv[]) {
     char * csvData = NULL;
     char * ipCamera = NULL;
     char * videoFile = NULL;
-    char * csvLogFile = NULL;
+    char * csvBlobFile = NULL;
+    char * csvObjectsDetectedFile = NULL;
     char * jpegDumpPath = NULL;
 
     // Media dimensions
@@ -91,8 +93,11 @@ int main(int argc, char* argv[]) {
                 t = atoi(optarg);
                 break;
         // Outputs
+            case 'b':
+                csvBlobFile = optarg;
+                break;
             case 'o':
-                csvLogFile = optarg;
+                csvObjectsDetectedFile = optarg;
                 break;
             case 'd':
                 displayFrames = true;
@@ -138,8 +143,12 @@ int main(int argc, char* argv[]) {
     DataSourceManager& manager = *dataManager;
 
     // Configure Manager
-    if (csvLogFile) {
-        manager.setCsvLogFile(csvLogFile);
+    if (csvBlobFile) {
+        manager.setCsvBlobFile(csvBlobFile);
+    }
+
+    if (csvObjectsDetectedFile) {
+        manager.setCsvObjectsFile(csvObjectsDetectedFile);
     }
 
     if (l && t) {
