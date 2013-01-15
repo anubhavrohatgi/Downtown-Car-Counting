@@ -48,6 +48,8 @@ public:
 
     virtual ObjectType getType() = 0;
 
+    virtual int getDirection() = 0;
+
     std::vector<Blob*>& getBlobs();
 
 protected:

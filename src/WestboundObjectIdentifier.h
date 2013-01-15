@@ -19,6 +19,10 @@ public:
         return 60*1000;
     }
 
+    virtual int getDirection() {
+        return 0;
+    }
+
     virtual ObjectIdentifier::ObjectType getType();
 
     static bool inStartingZone(Blob& b) {
