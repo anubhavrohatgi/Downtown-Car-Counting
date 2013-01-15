@@ -20,7 +20,7 @@ public:
     ~CarCounter();
 
     int getCarCount() {
-        return carCount;
+        return eastboundCarCount + westboundCarCount;
     }
 
     double getAvgSpeed(int numFrames);
@@ -34,7 +34,8 @@ private:
 
     double distanceThreshold;
     double expectedPathSlope;
-    int carCount;
+    int eastboundCarCount;
+    int westboundCarCount;
     int bikeCount;
     int streetcarCount;
     int xBoundary;

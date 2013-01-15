@@ -14,6 +14,8 @@ void printUsage(const char * name) {
             "\nOutput\n" \
             "   -o <output_csv_log> \n" \
             "   -d # specifies if frames should be displayed while processing (valid with -c, -v)\n" \
+            "   -j <path> # dumps jpeg frames to directory for making into a movie or debug purposes\n" \
+            "             # (format ImageA[frameCount mod 1000].jpg and imageB[frameCount mod 1000].jpg)\n" \
             "\nCropping (Optional, valid with -c and -v options)\n" \
             "   -x <crop_x>\n" \
             "   -y <crop_y>\n" \
@@ -40,6 +42,7 @@ int main(int argc, char* argv[]) {
     char * ipCamera = NULL;
     char * videoFile = NULL;
     char * csvLogFile = NULL;
+    char * jpegDumpPath = NULL;
 
     // Media dimensions
     int w=0, h=0;
@@ -52,7 +55,7 @@ int main(int argc, char* argv[]) {
     bool displayFrames = false;
     int fps = 0;
 // TODO: add fps parameter,
-    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dx:y:l:t:w:h:?")) != -1) {
+    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dj:x:y:l:t:w:h:?")) != -1) {
         switch (c)
         {
         // Data Sources
@@ -93,6 +96,9 @@ int main(int argc, char* argv[]) {
                 break;
             case 'd':
                 displayFrames = true;
+                break;
+            case 'j':
+                jpegDumpPath = optarg;
                 break;
             case '?':
                 printUsage(argv[0]);
@@ -138,6 +144,10 @@ int main(int argc, char* argv[]) {
 
     if (l && t) {
         manager.getImageProcessor().setCrop(x, y, l, t);
+    }
+
+    if (jpegDumpPath) {
+        manager.getImageProcessor().setJpegDumpPath(jpegDumpPath);
     }
 
     // Process Data or Stream from Camera

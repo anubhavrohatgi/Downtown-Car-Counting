@@ -12,8 +12,9 @@ DataSourceManager::DataSourceManager() :
 
 DataSourceManager::~DataSourceManager()
 {
-    delete imgProcessor;
+    printf("~DataSourceManager\n");
     delete networkCamera;
+    delete imgProcessor;
 }
 
 void DataSourceManager::setCsvLogFile(const char * path)

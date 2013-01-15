@@ -121,7 +121,6 @@ private:
     cv::KalmanFilter& xyFilter;//(4, 2, 0);
     cv::KalmanFilter& txFilter;//(4, 2, 0);
     cv::KalmanFilter& tyFilter;//(4, 2, 0);
-    //cv::Mat_<float>& measurement;//(2,1);
 
     ObjectType type;
 };

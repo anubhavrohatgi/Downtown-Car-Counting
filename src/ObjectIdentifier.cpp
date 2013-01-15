@@ -61,24 +61,23 @@ ObjectIdentifier::ObjectIdentifier(Blob* blob) :
 
 ObjectIdentifier::~ObjectIdentifier()
 {
+    printf("~ObjectIdentifier\n");
     for (int i = 0; i < blobs.size(); i++) {
         delete blobs.at(i);
     }
-    //printf("~%d (#pts %d): (%.2f, %.2f, %.2f, %.2f) size %.2f\n", id, points.size(), minx, maxx, miny, maxy, size());
-    // TODO: why can't I delete these ?
     delete &xyFilter;
     delete &txFilter;
     delete &tyFilter;
-    //delete &measurement;
 }
 
-void ObjectIdentifier::updateTime(long currentTime)
+void ObjectIdentifier::updateTime(long inTime)
 {
-    currentTime = currentTime;
+    currentTime = inTime;
 }
 
 long ObjectIdentifier::lastSeen()
 {
+    printf("Last Seen %ld current %ld blob %ld\n", currentTime - blobs.at(blobs.size() - 1)->time, currentTime, blobs.at(blobs.size() - 1)->time);
     return (currentTime - blobs.at(blobs.size() - 1)->time);
 }
 

@@ -3,7 +3,8 @@
 using namespace std;
 
 CarCounter::CarCounter() :
-    carCount(0),
+    eastboundCarCount(0),
+    westboundCarCount(0),
     bikeCount(0),
     streetcarCount(0),
     rosCreated(0),
@@ -17,12 +18,15 @@ CarCounter::CarCounter() :
 CarCounter::~CarCounter()
 {
     // Shutting down, classify remaining objects
+    printf("~CarCounter\n");
     classifyObjects(true, 0);
     assert(eastboundObjects.size() == 0);
     assert(westboundObjects.size() == 0);
     for (int i = 0; i < unidentifiedBlobs.size(); i++) {
         delete unidentifiedBlobs.at(i);
     }
+    printf("Eastbound %d Cars\n", eastboundCarCount);
+    printf("Westbound %d Cars\n", westboundCarCount);
 }
 
 int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime) {
@@ -71,8 +75,9 @@ int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime) {
             westboundObjects.push_back(obj);
             printf("NEW WEST OBJ %d\n", id);
         } else {
-            blob.setClusterId(1); // 1 = UNKNOWN
-            unidentifiedBlobs.push_back(&blob);
+            //blob.setClusterId(1); // 1 = UNKNOWN
+            //unidentifiedBlobs.push_back(&blob);
+            delete &blob;
             printf("UNIDENTIFIED BLOB\n");
         }
         logBlob(blob);
@@ -100,25 +105,34 @@ int CarCounter::findBestFit(Blob& b, list<ObjectIdentifier*> objects, ObjectIden
 int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
 {
     int newlyClassified = 0;
+    int blobsOutstanding = 0;
     // Iterate through ObjectIdentifiers and see if we can classify (or discard) them
     std::list<ObjectIdentifier*>::iterator iterator = eastboundObjects.begin();
     while (iterator != eastboundObjects.end()) {
         ObjectIdentifier * oi = *iterator;
+        printf("EB %d: %d blobs %ld lifetime\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime());
+        blobsOutstanding += oi->getNumBlobs();
         if (currentTime) {
             oi->updateTime(currentTime);
         }
         long lastSeen = forceTimeout ? numeric_limits<long>::max() : oi->lastSeen();
-        if (lastSeen > oi->getTimeout()) {
+        if (lastSeen > oi->getTimeout() || oi->getLifetime() > 2*60*1000) {
             // Object has timed out
+            if (oi->getLifetime() > 2*60*1000) {
+                printf("LIFETIME TIMEOUT\n");
+            }
             if (oi->getType() != ObjectIdentifier::UNKNOWN) {
                 printf("EASTBOUND OBJECT IDENTIFIED - type %d\n", oi->getType());
                 printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
                 newlyClassified++;
+                eastboundCarCount++;
             }
+#if 0
             std::vector<Blob*>& blobs = oi->getBlobs();
             for (int i = 0; i < blobs.size(); i++) {
                 logBlob(*blobs.at(i));
             }
+#endif
             delete oi;
             eastboundObjects.erase(iterator++);
         } else {
@@ -130,21 +144,29 @@ int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
     iterator = westboundObjects.begin();
     while (iterator != westboundObjects.end()) {
         ObjectIdentifier * oi = *iterator;
+        printf("WB %d: %d blobs %ld lifetime\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime());
+        blobsOutstanding += oi->getNumBlobs();
         if (currentTime) {
             oi->updateTime(currentTime);
         }
         long lastSeen = forceTimeout ? numeric_limits<long>::max() : oi->lastSeen();
-        if (lastSeen > oi->getTimeout()) {
+        if (lastSeen > oi->getTimeout() || oi->getLifetime() > 2*60*1000) {
             // Object has timed out
+            if (oi->getLifetime() > 2*60*1000) {
+                printf("LIFETIME TIMEOUT\n");
+            }
             if (oi->getType() != ObjectIdentifier::UNKNOWN) {
                 printf("WESTBOUND OBJECT IDENTIFIED - type %d\n", oi->getType());
                 printf("ID %d, %d pts age %ld dist %f\n", oi->getId(), oi->getNumBlobs(), oi->getLifetime(), oi->getDistanceTravelled());
                 newlyClassified++;
+                westboundCarCount++;
             }
+#if 0
             std::vector<Blob*>& blobs = oi->getBlobs();
             for (int i = 0; i < blobs.size(); i++) {
                 logBlob(*blobs.at(i));
             }
+#endif
             delete oi;
             westboundObjects.erase(iterator++);
         } else {
@@ -152,6 +174,7 @@ int CarCounter::classifyObjects(bool forceTimeout, long currentTime)
             iterator++;
         }
     }
+    printf("Blobs Outstanding %d\n", blobsOutstanding);
     return newlyClassified;
 }
 

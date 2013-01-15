@@ -17,6 +17,7 @@ ImageProcessor::ImageProcessor(CarCounter * c) :
     tavg(0),
     ttotal(0),
     tfps(0),
+    jpegDumpPath(NULL),
     lastStatsPrinted(1)
 {
 
@@ -56,8 +57,8 @@ void ImageProcessor::processVideoFile(const char * path)
     }
     carCounter->classifyObjects(true, 0);
 }
-
-int ImageProcessor::processFrame(Mat inFrame, long currentTime)
+bool onA = false;
+int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
 {
     // Profiling and Stats
     long frameStart = getTime();
@@ -79,7 +80,7 @@ int ImageProcessor::processFrame(Mat inFrame, long currentTime)
         // Convert to RGB required for background subtractor
         try {
             cvtColor(frame, frame, CV_RGBA2RGB);
-        } catch (cv::Exception& e) {
+        } catch (Exception& e) {
             printf("Caught Exception in cvtColor(frame, frame, CV_RGBA2RGB): %s\n", e.what());
             return 0;
         }
@@ -105,10 +106,10 @@ int ImageProcessor::processFrame(Mat inFrame, long currentTime)
         if (showFrames) {
             Mat bgImg;
             bg_model.getBackgroundImage(bgImg);
-            cv::imshow("INPUT", inFrame);
-            cv::imshow("BG", bgImg);
-            cv::imshow("FGMASK", fgmask);
-            cv::imshow("FGIMG", fgimg);
+            imshow("INPUT", inFrame);
+            imshow("BG", bgImg);
+            imshow("FGMASK", fgmask);
+            imshow("FGIMG", fgimg);
         }
 
         // Just do BG model for the first few frames (no blob detection)
@@ -117,15 +118,15 @@ int ImageProcessor::processFrame(Mat inFrame, long currentTime)
         }
 
 // Help with quality of data?
-//cv::erode(fgimg,fgimg,cv::Mat());
-//cv::dilate(fgimg,fgimg,cv::Mat());
+//erode(fgimg,fgimg,Mat());
+//dilate(fgimg,fgimg,Mat());
 
-//cv::imshow("ERODED", fgimg);
+//imshow("ERODED", fgimg);
 
         // Convert to grayscale, required by cvBlob
         try {
             cvtColor(fgimg, fgimg, CV_RGB2GRAY);
-        } catch (cv::Exception& e) {
+        } catch (Exception& e) {
             printf("Caught Exception in cvtColor(fgimg, fgimg, CV_RGB2GRAY): %s\n", e.what());
             //return 0;
         }
@@ -159,7 +160,7 @@ int ImageProcessor::processFrame(Mat inFrame, long currentTime)
         cvFilterByArea(cvBlobs, 100, 20000);
 
         printf("Blobs Size: %d\n", (int)cvBlobs.size());
-        if (carCounter && cvBlobs.size() > 0) {
+        if (carCounter && cvBlobs.size() > 0 && false) {
             vector<Blob*> blobs;
             for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
                     CvBlob blob = *(it->second);
@@ -173,7 +174,24 @@ int ImageProcessor::processFrame(Mat inFrame, long currentTime)
             cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
             cvShowImage("dstImg", dstImg);
         }
-    } catch (cv::Exception& e) {
+
+        if (jpegDumpPath) {
+            // Add detected blobs to input image
+            for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
+                    CvBlob* b = it->second;
+                    Rect r = Rect(b->minx + roi.x, b->miny + roi.y, b->maxx - b->minx, b->maxy - b->miny);
+                    rectangle(inFrame, r, CV_RGB(255,255,255));
+            }
+
+            // Write jpeg to file
+            char buf[64];
+            sprintf(buf, "%s/image%09d.jpg", jpegDumpPath, (frameCount - 10) % 1000);
+            bool res = imwrite(buf, inFrame);
+            if (!res) {
+                printf("Could not write %s\n", buf);
+            }
+        }
+    } catch (Exception& e) {
         printf("Caught Exception in ImageProcessor: %s\n", e.what());
     }
 
@@ -209,6 +227,7 @@ long ImageProcessor::getTime()
 
 ImageProcessor::~ImageProcessor()
 {
+    printf("~ImageProcessor\n");
     if (labelImg) {
         cvReleaseImage(&labelImg);
     }

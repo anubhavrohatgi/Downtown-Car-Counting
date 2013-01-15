@@ -18,7 +18,11 @@ public:
         printf("Setting Crop x=%d y=%d w=%d h=%d\n", x, y, w, h);
     }
 
-    int processFrame(cv::Mat frame, long time);
+    void setJpegDumpPath(char *path) {
+        jpegDumpPath = path;
+    }
+
+    int processFrame(cv::Mat& frame, long time);
 
     // Can only be set before processing begins
     void setShowFrames(bool d);
@@ -38,6 +42,8 @@ private:
     CarCounter * carCounter;
     IplImage * labelImg;
     IplImage * dstImg;
+
+    char *jpegDumpPath;
 
     cv::BackgroundSubtractorMOG2 bg_model;
 

@@ -83,6 +83,7 @@ void NetworkStream::startProcessing()
 
 NetworkStream::~NetworkStream()
 {
+    printf("~NetworkStream\n");
     /* No need to keep the media now */
     libvlc_media_player_release (mediaPlayer);
 
