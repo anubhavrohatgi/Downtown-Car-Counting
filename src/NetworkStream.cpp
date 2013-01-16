@@ -11,7 +11,7 @@ static struct ctx* context;
 
 static void * lock(void *data, void**p_pixels)
 {
-    //printf("LOCK %d\n", 3);
+    //printf("LOCK %p\n", 3);
     *p_pixels = context->pixels;
 }
 
@@ -25,6 +25,7 @@ static void unlock(void *data, void *id, void *const *p_pixels){
     struct ctx *ctx = (struct ctx*)data;
     /* VLC just rendered the video, but we can also render stuff */
     uchar *pixels = (uchar*)*p_pixels;
+    printf("pImage %p\n", (void*)ctx->image);
     cv::Mat frame(ctx->image, false);// = Mat(orig, true);
     if (imProc) {
         imProc->processFrame(frame, ImageProcessor::getTime());
@@ -90,4 +91,6 @@ NetworkStream::~NetworkStream()
     libvlc_release(libVlcInstance);
 
     free(context);
+
+    cvReleaseImage(&context->image);
 }

@@ -2,11 +2,14 @@ CPPFLAGS=-I/usr/local/include/opencv/ -g
 LDFLAGS=
 LDLIBS=-lvlc -lcvblob -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video
 
-CarCount: main.o NetworkStream.o ImageProcessor.o DataSourceManager.o CarCounter.o ObjectIdentifier.o EastboundObjectIdentifier.o WestboundObjectIdentifier.o
-	g++ $(LDFLAGS) $(CPPFLAGS) -o CarCount main.o NetworkStream.o ImageProcessor.o DataSourceManager.o CarCounter.o ObjectIdentifier.o EastboundObjectIdentifier.o WestboundObjectIdentifier.o $(LDLIBS) 
+CarCount: main.o Blob.o NetworkStream.o ImageProcessor.o DataSourceManager.o CarCounter.o ObjectIdentifier.o EastboundObjectIdentifier.o WestboundObjectIdentifier.o
+	g++ $(LDFLAGS) $(CPPFLAGS) -o CarCount main.o Blob.o NetworkStream.o ImageProcessor.o DataSourceManager.o CarCounter.o ObjectIdentifier.o EastboundObjectIdentifier.o WestboundObjectIdentifier.o $(LDLIBS) 
 
 main.o: main.cpp
 	g++ $(CPPFLAGS) -c main.cpp
+
+Blob.o: Blob.h Blob.cpp
+	g++ $(CPPFLAGS) -c Blob.cpp
 
 NetworkStream.o: NetworkStream.h NetworkStream.cpp
 	g++ $(CPPFLAGS) -c NetworkStream.cpp

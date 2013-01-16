@@ -2,32 +2,16 @@
 #define _BLOB_H_
 
 #include <stdio.h>
-static int blobsAlive = 0;
+
 class Blob {
-
 public:
-    Blob(double x, double y, double area, long time) :
-        x(x),
-        y(y),
-        area(area),
-        time(time)
-    {
-        blobsAlive++;
-        //printf("Blobs Alive %d\n", blobsAlive);
-    }
+    Blob(double x, double y, double area, long time);
 
-    void setClusterId(int id) {
-        clusterId = id;
-    }
+    void setClusterId(int id);
 
-    int getClusterId() {
-        return clusterId;
-    }
+    int getClusterId();
 
-    ~Blob() {
-        blobsAlive--;
-        //printf("Blobs Alive %d\n", blobsAlive);
-    }
+    ~Blob();
 
     double x;
     double y;

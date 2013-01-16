@@ -67,6 +67,7 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
     }
 
     CvBlobs cvBlobs;
+    vector<Blob*> blobs;
     frameCount++;
 
     try {
@@ -159,14 +160,12 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
         // Filter out really small blobs
         cvFilterByArea(cvBlobs, 100, 20000);
 
-        printf("Blobs Size: %d\n", (int)cvBlobs.size());
-        if (carCounter && cvBlobs.size() > 0) {
-            vector<Blob*> blobs;
-            for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
-                    CvBlob blob = *(it->second);
-                    Blob* b = new Blob(blob.centroid.x, blob.centroid.y, blob.area, currentTime);
-                    blobs.push_back(b);
-            }
+        for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
+            CvBlob *blob = it->second;
+            Blob* b = new Blob(blob->centroid.x, blob->centroid.y, blob->area, currentTime);
+            blobs.push_back(b);
+        }
+        if (carCounter) {
             carCounter->processBlobs(blobs, currentTime);
         }
 
@@ -178,9 +177,9 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
         if (jpegDumpPath) {
             // Add detected blobs to input image
             for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
-                    CvBlob* b = it->second;
-                    Rect r = Rect(b->minx + roi.x, b->miny + roi.y, b->maxx - b->minx, b->maxy - b->miny);
-                    rectangle(inFrame, r, CV_RGB(255,255,255));
+                CvBlob* b = it->second;
+                Rect r = Rect(b->minx + roi.x, b->miny + roi.y, b->maxx - b->minx, b->maxy - b->miny);
+                rectangle(inFrame, r, CV_RGB(255,255,255));
             }
 
             // Write jpeg to file
@@ -194,6 +193,9 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
     } catch (Exception& e) {
         printf("Caught Exception in ImageProcessor: %s\n", e.what());
     }
+
+    // Release all CvBlob memory
+    cvReleaseBlobs(cvBlobs);
 
     // Handle Stats
     long frameEnd = getTime();
@@ -213,7 +215,7 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
         lastStatsPrinted = frameCount;
         tfps = 0;
     }
-    return cvBlobs.size();
+    return blobs.size();
 }
 
 // Returns time in ms
