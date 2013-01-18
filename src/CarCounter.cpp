@@ -31,7 +31,7 @@ CarCounter::~CarCounter()
     printf("Westbound %d Cars\n", westboundCarCount);
 }
 
-int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime) {
+int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime, bool retryUnclassified) {
     int numBlobs = blobs.size();
     // Determine the best fit for each blob
     for (unsigned int i = 0; i < blobs.size(); i++) {
@@ -77,13 +77,23 @@ int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime) {
             westboundObjects.push_back(obj);
             printf("NEW WEST OBJ %d\n", id);
         } else {
-            //blob.setClusterId(1); // 1 = UNKNOWN
-            //unidentifiedBlobs.push_back(&blob);
-            delete &blob;
             printf("UNIDENTIFIED BLOB\n");
+            if (retryUnclassified) {
+                blob.setClusterId(1); // 1 = UNKNOWN
+                unidentifiedBlobs.push_back(&blob);
+            } else {
+                delete &blob;
+            }
         }
         logBlob(blob);
     }
+    if (retryUnclassified) {
+        printf("Processing Unknown Blobs...\n");
+        processBlobs(unidentifiedBlobs, currentTime, false);
+        unidentifiedBlobs.clear();
+        printf("Done Processing Unknown Blobs\n");
+    }
+    // Run through unidentified blobs, see if we get any new matches
     return classifyObjects(false, currentTime);
 }
 

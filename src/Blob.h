@@ -6,6 +6,7 @@
 class Blob {
 public:
     Blob(double x, double y, double area, long time);
+    Blob(double x, double y, double minx, double maxx, double miny, double maxy, double area, long time);
 
     void setClusterId(int id);
 
@@ -16,6 +17,8 @@ public:
     double x;
     double y;
     double area;
+    double minx, maxx;
+    double miny, maxy;
     long time;
 private:
     int clusterId;

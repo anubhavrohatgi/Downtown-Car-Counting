@@ -31,7 +31,7 @@ public:
 
     int classifyObjects(bool forceAll, long currentTime);
 
-    int processBlobs(std::vector<Blob*>& blobs, long currentTime);
+    int processBlobs(std::vector<Blob*>& blobs, long currentTime, bool retryUnclassified=false);
 
 private:
     int findBestFit(Blob& b, std::list<ObjectIdentifier*> objects, ObjectIdentifier** bestFit);

@@ -162,26 +162,23 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
 
         for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
             CvBlob *blob = it->second;
-            Blob* b = new Blob(blob->centroid.x, blob->centroid.y, blob->area, currentTime);
+            Blob* b = new Blob(blob->centroid.x, blob->centroid.y, blob->minx, blob->maxx, blob->miny, blob->maxy, blob->area, currentTime);
             blobs.push_back(b);
         }
         if (carCounter) {
             carCounter->processBlobs(blobs, currentTime);
         }
 
-        if (showFrames) {
-            cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
-            cvShowImage("dstImg", dstImg);
+        // Add classified blobs on top of original image
+        for (int i = 0; i < blobs.size(); i++) {
+            Blob *b = blobs.at(i);
+            if (b->getClusterId() > 1) {
+                Rect r = Rect(b->minx + roi.x, b->miny + roi.y, b->maxx - b->minx, b->maxy - b->miny);
+                rectangle(inFrame, r, CV_RGB(b->getClusterId()*25,b->getClusterId()*25,b->getClusterId()*25));
+            }
         }
 
         if (jpegDumpPath) {
-            // Add detected blobs to input image
-            for (CvBlobs::iterator it = cvBlobs.begin(); it != cvBlobs.end(); ++it) {
-                CvBlob* b = it->second;
-                Rect r = Rect(b->minx + roi.x, b->miny + roi.y, b->maxx - b->minx, b->maxy - b->miny);
-                rectangle(inFrame, r, CV_RGB(255,255,255));
-            }
-
             // Write jpeg to file
             char buf[64];
             sprintf(buf, "%s/image%09d.jpg", jpegDumpPath, (frameCount - 10) % 1000);
@@ -189,6 +186,12 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
             if (!res) {
                 printf("Could not write %s\n", buf);
             }
+        }
+
+        if (showFrames) {
+            cvRenderBlobs(labelImg, cvBlobs, &filtered_img, dstImg);
+            cvShowImage("dstImg", dstImg);
+            imshow("ALGO", inFrame);
         }
     } catch (Exception& e) {
         printf("Caught Exception in ImageProcessor: %s\n", e.what());

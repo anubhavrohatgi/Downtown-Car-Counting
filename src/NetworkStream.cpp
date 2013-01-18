@@ -25,7 +25,6 @@ static void unlock(void *data, void *id, void *const *p_pixels){
     struct ctx *ctx = (struct ctx*)data;
     /* VLC just rendered the video, but we can also render stuff */
     uchar *pixels = (uchar*)*p_pixels;
-    printf("pImage %p\n", (void*)ctx->image);
     cv::Mat frame(ctx->image, false);// = Mat(orig, true);
     if (imProc) {
         imProc->processFrame(frame, ImageProcessor::getTime());
