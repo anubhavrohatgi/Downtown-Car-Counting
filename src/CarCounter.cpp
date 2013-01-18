@@ -32,6 +32,11 @@ CarCounter::~CarCounter()
 }
 
 int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime, bool retryUnclassified) {
+    // TODO: this is a hack, put it somewhere else
+    for (int i = 0; i < unidentifiedBlobs.size(); i++) {
+        delete unidentifiedBlobs.at(i);
+    }
+    unidentifiedBlobs.clear();
     int numBlobs = blobs.size();
     // Determine the best fit for each blob
     for (unsigned int i = 0; i < blobs.size(); i++) {
@@ -78,16 +83,12 @@ int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime, bool retryU
             printf("NEW WEST OBJ %d\n", id);
         } else {
             printf("UNIDENTIFIED BLOB\n");
-            if (retryUnclassified) {
-                blob.setClusterId(1); // 1 = UNKNOWN
-                unidentifiedBlobs.push_back(&blob);
-            } else {
-                delete &blob;
-            }
+            blob.setClusterId(1); // 1 = UNKNOWN
+            unidentifiedBlobs.push_back(&blob);
         }
         logBlob(blob);
     }
-    if (retryUnclassified) {
+    if (false) {
         printf("Processing Unknown Blobs...\n");
         processBlobs(unidentifiedBlobs, currentTime, false);
         unidentifiedBlobs.clear();

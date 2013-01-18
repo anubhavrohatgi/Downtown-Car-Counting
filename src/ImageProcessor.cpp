@@ -45,6 +45,7 @@ void ImageProcessor::processVideoFile(const char * path)
 
     printf("Video: %s\nStats: %d frames, %d fps, len %ds\n", path, numFrames, fps, videoLength);
     long time = 0;
+    bool paused = false;
     while (framesProcessed < numFrames) {
         Mat frame;
         video >> frame;
@@ -53,11 +54,26 @@ void ImageProcessor::processVideoFile(const char * path)
         framesProcessed++;
         time += (1000 / fps);
         printf("%d / %d  %f pct\n", framesProcessed, numFrames, ((double)framesProcessed / (double)numFrames) * 100);
-        if (waitKey(1) >= 0) break;
+        int key = waitKey(1);
+        if (key == 'p') {
+            paused = !paused;
+            printf("PAUSED %d\n", paused);
+        }
+        if (paused) {
+            // When paused, any key can be used to process next frame
+            while(key < 0) {
+                key = cvWaitKey(1);
+                if (key == 'p') {
+                    paused = !paused;
+                    printf("PAUSED %d\n", paused);
+                }
+            }
+        }
     }
+    // Force classification of remaining objects
     carCounter->classifyObjects(true, 0);
 }
-bool onA = false;
+
 int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
 {
     // Profiling and Stats
@@ -170,18 +186,47 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
         }
 
         // Add classified blobs on top of original image
-        for (int i = 0; i < blobs.size(); i++) {
+        for (unsigned int i = 0; showFrames && i < blobs.size(); i++) {
             Blob *b = blobs.at(i);
-            if (b->getClusterId() > 1) {
+            printf("b == NULL %d\n", (b==NULL));
+            if (b != NULL) {
                 Rect r = Rect(b->minx + roi.x, b->miny + roi.y, b->maxx - b->minx, b->maxy - b->miny);
-                rectangle(inFrame, r, CV_RGB(b->getClusterId()*25,b->getClusterId()*25,b->getClusterId()*25));
+                CvScalar color;
+                switch(b->getClusterId()) {
+                case 2:
+                    color = CV_RGB(0xFF,0,0); // RED
+                    break;
+                case 3:
+                    color = CV_RGB(0,0xFF,0); // GREEN
+                    break;
+                case 4:
+                    color = CV_RGB(0,0,0xFF); // BLUE
+                    break;
+                case 5:
+                    color = CV_RGB(0xC0,0xC0,0xC0); // SILVER
+                    break;
+                case 6:
+                    color = CV_RGB(0xFF, 0x63, 0x47); // TOMATO
+                    break;
+                case 7:
+                    color = CV_RGB(0x80,0,0x80); // PURPLE
+                    break;
+                case 8:
+                    color = CV_RGB(0xFF,0xFF,0xFF); // WHITE
+                    break;
+                default:
+                    color = CV_RGB(0xFF,0xFF,0); // YELLOW
+                    break;
+                }
+                printf("RECT %d\n", b->getClusterId());
+                rectangle(inFrame, r, color, 5); //thickness can be CV_FILLED
             }
         }
 
         if (jpegDumpPath) {
             // Write jpeg to file
             char buf[64];
-            sprintf(buf, "%s/image%09d.jpg", jpegDumpPath, (frameCount - 10) % 1000);
+            sprintf(buf, "%s/image%09d.jpg", jpegDumpPath, (frameCount - 10));
             bool res = imwrite(buf, inFrame);
             if (!res) {
                 printf("Could not write %s\n", buf);
