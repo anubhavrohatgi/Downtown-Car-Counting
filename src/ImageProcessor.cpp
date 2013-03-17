@@ -50,6 +50,10 @@ void ImageProcessor::processVideoFile(const char * path)
         Mat frame;
         video >> frame;
         printf("time %ld\n", time);
+        char buf[60];
+        sprintf(buf, "%d  %ld", framesProcessed, time);
+        Point org(0,300);
+        putText(frame, buf, org, FONT_HERSHEY_SIMPLEX, 1, CV_RGB(0,0,0), 2);
         processFrame(frame, time);
         framesProcessed++;
         time += (1000 / fps);
@@ -186,7 +190,7 @@ int ImageProcessor::processFrame(Mat& inFrame, long currentTime)
         }
 
         // Add classified blobs on top of original image
-        for (unsigned int i = 0; showFrames && i < blobs.size(); i++) {
+        for (unsigned int i = 0; (showFrames || jpegDumpPath) && i < blobs.size(); i++) {
             Blob *b = blobs.at(i);
             printf("b == NULL %d\n", (b==NULL));
             if (b != NULL) {

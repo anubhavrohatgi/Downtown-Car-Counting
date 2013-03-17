@@ -42,7 +42,7 @@ int CarCounter::processBlobs(vector<Blob*>& blobs, long currentTime, bool retryU
     for (unsigned int i = 0; i < blobs.size(); i++) {
         Blob& blob = *blobs.at(i);
         int bestFitEB=0, bestFitWB=0;
-        printf("\ntime=%ld  x=%f  y=%f  numBlobs %d\n", currentTime, blob.x, blob.y, (int)blobs.size());
+        printf("\ntime=%ld  x=%f  y=%f  size=%f  numBlobs %d\n", currentTime, blob.x, blob.y, blob.area, (int)blobs.size());
         ObjectIdentifier* bestFit = NULL;
         ObjectIdentifier* pBestFitEB = NULL;
         ObjectIdentifier* pBestFitWB = NULL;

@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
     bool displayFrames = false;
     int fps = 0;
 // TODO: add fps parameter,
-    while ((c = getopt (argc, argv, "i:o:c:v:m:f:l:dj:x:y:l:t:w:h:?")) != -1) {
+    while ((c = getopt (argc, argv, "i:b:o:c:v:m:f:l:dj:x:y:l:t:w:h:?")) != -1) {
         switch (c)
         {
         // Data Sources

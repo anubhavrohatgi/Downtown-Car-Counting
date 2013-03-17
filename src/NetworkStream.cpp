@@ -1,5 +1,6 @@
 #include "NetworkStream.h"
 
+#if USE_VLC
 static ImageProcessor * imProc = NULL;
 
 struct ctx
@@ -34,12 +35,15 @@ static void unlock(void *data, void *id, void *const *p_pixels){
     //processFrame(ctx->image);
     //cvShowImage("test", ctx->image);
 }
+#endif
 
-NetworkStream::NetworkStream(const char * networkStream, ImageProcessor * proc, int mediaWidth, int mediaHeight) :
-    imageProcessor(proc),
-    libVlcInstance(NULL),
-    mediaPlayer(NULL)
+NetworkStream::NetworkStream(const char * networkStream, ImageProcessor * proc, int mediaWidth, int mediaHeight)
 {
+#if USE_VLC
+    imageProcessor = proc;
+    libVlcInstance = NULL;
+    mediaPlayer = NULL;
+
     // Hack since callback functions require static instance.
     imProc = imageProcessor;
 
@@ -67,22 +71,26 @@ NetworkStream::NetworkStream(const char * networkStream, ImageProcessor * proc, 
     //libvlc_media_player_set_media( mediaPlayer, media);
     libvlc_video_set_callbacks(mediaPlayer, lock, unlock, display, context);
     libvlc_video_set_format(mediaPlayer, "RV32", mediaWidth, mediaHeight, mediaWidth*4);
+#endif
 }
 
 // Does not return
 void NetworkStream::startProcessing()
 {
+#if USE_VLC
     libvlc_media_player_play(mediaPlayer);
 
     while(1)
     {
         cvWaitKey(10);
     }
+#endif
 }
 
 
 NetworkStream::~NetworkStream()
 {
+#if USE_VLC
     printf("~NetworkStream\n");
     /* No need to keep the media now */
     libvlc_media_player_release (mediaPlayer);
@@ -92,4 +100,5 @@ NetworkStream::~NetworkStream()
     free(context);
 
     cvReleaseImage(&context->image);
+#endif
 }

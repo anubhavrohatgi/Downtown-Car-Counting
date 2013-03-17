@@ -20,6 +20,7 @@ ObjectIdentifier::ObjectIdentifier(Blob* blob) :
     xyFilter(*(new KalmanFilter(4,2,0))),
     txFilter(*(new KalmanFilter(4,2,0))),
     tyFilter(*(new KalmanFilter(4,2,0))),
+    speedFilter(*(new KalmanFilter(4,2,0))),
     type(UNKNOWN)
 {
     Blob& b = *blob;
@@ -55,6 +56,7 @@ ObjectIdentifier::ObjectIdentifier(Blob* blob) :
     //setIdentity(tyFilter.processNoiseCov, Scalar::all(1e-4));
     //setIdentity(tyFilter.measurementNoiseCov, Scalar::all(1e-1));
     //setIdentity(tyFilter.errorCovPost, Scalar::all(.1));
+    setIdentity(speedFilter.measurementMatrix);
 #endif
     addBlob(b);
 }
@@ -109,7 +111,7 @@ bool ObjectIdentifier::addBlob(Blob& b)
     blobs.push_back(&b);
     currentTime = b.time;
 
-    // Keep track of closest and furthest blobs from origin
+    // Keep track of closest and furthest blobs from origin TODO: why? maybe not needed anymore
     double distanceToOrigin = distance(b.x, b.y, 0, 0);
 
     if (distanceToOrigin > furthestDistToOrigin) {
@@ -152,9 +154,11 @@ int ObjectIdentifier::getFit(Blob& b)
     double e3 = errTY(b.time, b.y);
     double e = sqrt(e1*e1 + e2*e2 + e3*e3);
 
-    printf("Predicted XY %f TX %f TY %f\n", toPredictedXY, toPredictedTX, toPredictedTY);
     printf("ID %d XY %f TX %f TY %f   D %f      SumSq: %f\n", getId(), e1, e2, e3, distToLast, e);
+    printf("Predicted XY %f TX %f TY %f\n", toPredictedXY, toPredictedTX, toPredictedTY);
 
+    double actualRate = distToLast / ((double)b.time - (double)lastBlob->time) * 1000;
+    printf("Speed %f  Size/lastBlob %f\n", actualRate, (double)sqrt(b.area) / (double)sqrt(lastBlob->area));
     if (getNumBlobs() <= 5) {
         score = (30 - distToLast) * 3;
 #if 0

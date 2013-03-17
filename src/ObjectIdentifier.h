@@ -123,7 +123,7 @@ private:
     cv::KalmanFilter& xyFilter;//(4, 2, 0);
     cv::KalmanFilter& txFilter;//(4, 2, 0);
     cv::KalmanFilter& tyFilter;//(4, 2, 0);
-
+    cv::KalmanFilter& speedFilter;
     ObjectType type;
 };
 

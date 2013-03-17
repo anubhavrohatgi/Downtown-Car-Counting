@@ -97,8 +97,12 @@ int DataSourceManager::processCsvFile(const char * path)
 
 int DataSourceManager::processIpCamera(const char * connectionString, int mediaWidth, int mediaHeight)
 {
+#if USE_VLC
     if (!networkCamera) {
         networkCamera = new NetworkStream(connectionString, &getImageProcessor(), mediaWidth, mediaHeight);
     }
     networkCamera->startProcessing();
+#else
+    printf("\n\n** Program has not been compiled with -DUSE_VLC.  Recompile with this option to use video streaming capabilities. **\n\n");
+#endif
 }
